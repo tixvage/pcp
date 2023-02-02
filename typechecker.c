@@ -153,7 +153,7 @@ char *check_expr(Var_Array vars, Expr *expr) {
             return lhs;
         } break;
         case EXPR_UN_OP: {
-            assert(0 && "todo");
+            return check_expr(vars, expr->as.un_op->expr);
         } break;
         case EXPR_FUNC_CALL: {
             Fn_Decl *possible_fn = function_exist(expr->as.func_call->name);
