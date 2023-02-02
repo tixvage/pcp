@@ -292,7 +292,7 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
     Token return_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
     parser_expect(parser, TOKEN_LBRACE, "Expected `{`");
 
-    fn_decl->name = name.value;
+    fn_decl->name = name;
     fn_decl->return_type = return_type.value;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {

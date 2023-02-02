@@ -66,7 +66,7 @@ typedef struct Var_Decl {
 } Var_Decl;
 
 typedef struct Fn_Decl {
-    char *name;
+    Token name;
     char *return_type;
     struct {
         Stmt *data;

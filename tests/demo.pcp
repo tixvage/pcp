@@ -1,7 +1,7 @@
 fn get_and_return(v: i32): i32 {
     return v;
 }
-  
+
 fn multiply(a: i32, b: i32): i32 {
     var result := a * b;
     return result;

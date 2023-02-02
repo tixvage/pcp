@@ -38,7 +38,7 @@ void cgen_functions(Parsed_File *decls) {
 }
 
 void cgen_function(Fn_Decl *fn) {
-    fprintf(f, "%s %s(", fn->return_type, fn->name);
+    fprintf(f, "%s %s(", fn->return_type, fn->name.value);
     if (fn->args.data == NULL) {
         fprintf(f, "void");
     } else {
