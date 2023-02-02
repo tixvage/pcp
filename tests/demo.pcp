@@ -13,11 +13,7 @@ fn get_number(): i32 {
 
 fn main(): i32 {
     if 1 + 2 == 3 {
-        var x : i32 = 0;
-        if 1 == 1 {
-            var y : i32 = x;
-        }
-        var v := x;
+        var x : bool = 0 == 0;
     }
     var y := multiply(get_and_return(0), get_and_return(0));
     return y - 35;

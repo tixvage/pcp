@@ -40,6 +40,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_KEYWORD_IF] = "if",
     [TOKEN_KEYWORD_FN] = "fn",
     [TOKEN_KEYWORD_VAR] = "var",
+    [TOKEN_KEYWORD_AS] = "as",
     [TOKEN_KEYWORD_CONST] = "const",
     [TOKEN_KEYWORD_RETURN] = "return",
     [TOKEN_KEYWORD_INLINE] = "inline",

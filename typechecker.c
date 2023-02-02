@@ -105,7 +105,7 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn) {
                 assert(0 && "todo");
             } break;
             case STMT_EXPR: {
-                assert(0 && "todo");
+                check_expr(vars, stmt.as.expr);
             } break;
             case STMT_EMPTY:  {
             } break;

@@ -282,7 +282,12 @@ Var_Decl *parse_var_decl(Parser *parser) {
     var_decl->constant = false;
     var_decl->name = id;
     var_decl->type = var_type.value;
-    var_decl->value = parse_expr(parser);
+    Expr *expr = parse_expr(parser);
+    if (expr == NULL) {
+        error_msg(decl_type.loc, ERROR_FATAL, "expected expression after `=` or `:=`");
+        exit(1);
+    }
+    var_decl->value = expr;
 
     parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
 
