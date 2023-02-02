@@ -35,6 +35,7 @@ Expr *parse_primary_expr(Parser *parser);
 Expr *parse_comparative_expr(Parser *parser);
 Expr *parse_additive_expr(Parser *parser);
 Expr *parse_multiplicitave_expr(Parser *parser);
+Expr *parse_cast_expr(Parser *parser);
 Var_Decl *parse_var_decl(Parser *parser);
 Fn_Decl *parse_fn_decl(Parser *parser);
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl);
@@ -246,10 +247,10 @@ Expr *parse_additive_expr(Parser *parser) {
 }
 
 Expr *parse_multiplicitave_expr(Parser *parser) {
-    Expr *root = parse_primary_expr(parser);
+    Expr *root = parse_cast_expr(parser);
     while (parser->current_token.type == TOKEN_ASTERISK || parser->current_token.type == TOKEN_SLASH) {
         Token op = parser_eat(parser);
-        Expr *right = parse_primary_expr(parser);
+        Expr *right = parse_cast_expr(parser);
 
         Bin_Op *bin_op = malloc(sizeof(Bin_Op));
         bin_op->left = root;
@@ -265,14 +266,34 @@ Expr *parse_multiplicitave_expr(Parser *parser) {
     return root;
 }
 
+Expr *parse_cast_expr(Parser *parser) {
+    Expr *root = parse_primary_expr(parser);
+    while (parser->current_token.type == TOKEN_KEYWORD_AS) {
+        Token op = parser_eat(parser);
+        Token type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for casting");
+
+        Cast *cast = malloc(sizeof(Cast));
+        cast->expr = root;
+        cast->op = op;
+        cast->type = type;
+
+        root = malloc(sizeof(Cast));
+        root->kind = EXPR_CAST;
+        root->as = (Expr_As){.cast = cast};
+        root->loc = op.loc;
+    }
+
+    return root;
+}
+
 Var_Decl *parse_var_decl(Parser *parser) {
     parser_eat(parser);
-    Token id = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
     Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "i32"};
     if (decl_type.type == TOKEN_COLON) {
-        var_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type for variable");
-        parser_expect(parser, TOKEN_EQUAL, "Expected `=`");
+        var_type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for variable");
+        parser_expect(parser, TOKEN_EQUAL, "expected `=`");
     } else if (decl_type.type != TOKEN_COLON_EQUAL) {
         error_msg(decl_type.loc, ERROR_FATAL, "expected `:` or `:=` after `var %s`", id.value);
         exit(1);

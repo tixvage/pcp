@@ -19,6 +19,12 @@ typedef struct Scope {
     int len;
 } Scope;
 
+typedef struct Cast {
+    Expr *expr;
+    Token op;
+    Token type;
+} Cast;
+
 typedef struct Bin_Op {
     Expr *left;
     Token op;
@@ -84,6 +90,7 @@ typedef enum Expr_Kind {
     EXPR_FUNC_CALL,
     EXPR_BIN_OP,
     EXPR_UN_OP,
+    EXPR_CAST,
 } Expr_Kind;
 
 typedef union Expr_As {
@@ -92,6 +99,7 @@ typedef union Expr_As {
     Func_Call *func_call;
     Bin_Op *bin_op;
     Un_Op *un_op;
+    Cast *cast;
 } Expr_As;
 
 struct Expr {

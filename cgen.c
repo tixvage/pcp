@@ -19,6 +19,7 @@ void cgen_var_assignment(Var_Assign *var_assign);
 void cgen_expr(Expr *expr);
 
 void cgen_prepare(void) {
+    fprintf(f, "#include <stdbool.h>\n");
     fprintf(f, "#include <stdint.h>\n");
     fprintf(f, "typedef uint8_t u8;\n");
     fprintf(f, "typedef int8_t i8;\n");
@@ -139,6 +140,11 @@ void cgen_expr(Expr *expr) {
                     cgen_expr(arg);
                 }
             }
+            fprintf(f, ")");
+        } break;
+        case EXPR_CAST: {
+            fprintf(f, "(%s)(", expr->as.cast->type.value);
+            cgen_expr(expr->as.cast->expr);
             fprintf(f, ")");
         } break;
         default: {

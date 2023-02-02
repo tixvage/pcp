@@ -171,12 +171,17 @@ char *check_expr(Var_Array vars, Expr *expr) {
                 char *given_type = check_expr(vars, expr->as.func_call->args.data[i]);
                 if (strcmp(expected_type, given_type) != 0) {
                     error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
-                    error_msg(expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type, given_type);
+                    error_msg(expr->as.func_call->args.data[i]->loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type, given_type);
                     error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
                     exit(1);
                 }
             }
             return possible_fn->return_type;
+        } break;
+        case EXPR_CAST: {
+            //TODO: check if cast is possible
+            check_expr(vars, expr->as.cast->expr);
+            return expr->as.cast->type.value;
         } break;
         default: {
             assert(0 && "unreacheable");
