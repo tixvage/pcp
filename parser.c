@@ -198,11 +198,13 @@ Expr *parse_primary_expr(Parser *parser) {
         case TOKEN_LPAREN: {
             parser_eat(parser);
             Expr *expr = parse_expr(parser);
-            parser_eat(parser);
+            parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
             return expr;
         } break;
     }
-    return NULL;
+
+    error_msg(tk.loc, ERROR_FATAL, "invalid expression");
+    exit(1);
 }
 
 Expr *parse_comparative_expr(Parser *parser) {

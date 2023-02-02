@@ -14,7 +14,7 @@ fn get_number(): i32 {
 fn main(): i32 {
     if 1 + 2 == 3 {
         var x : bool = 0 == 0;
-        var b : i64 = (x as i32 * 5) as i64;
+        var b : i64 = x as i32 as i64;
         var c: i64 = b;
     }
     var y := multiply(get_and_return(0), get_and_return(0));
