@@ -137,6 +137,9 @@ char *check_expr(Var_Array vars, Expr *expr) {
         case EXPR_NUMBER: {
             return "i32";
         } break;
+        case EXPR_STRING: {
+            return "cstr";
+        } break;
         case EXPR_IDENTIFIER: {
             Var possible_var = var_exist(vars, expr->as.identifier->name);
             if (possible_var.type) {

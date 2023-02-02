@@ -40,6 +40,10 @@ typedef struct Number {
     int value;
 } Number;
 
+typedef struct String {
+    char *value;
+} String;
+
 typedef struct Identifier {
     char *name;
 } Identifier;
@@ -86,6 +90,7 @@ typedef struct Fn_Decl {
 typedef enum Expr_Kind {
     EXPR_INVALID,
     EXPR_NUMBER,
+    EXPR_STRING,
     EXPR_IDENTIFIER,
     EXPR_FUNC_CALL,
     EXPR_BIN_OP,
@@ -95,6 +100,7 @@ typedef enum Expr_Kind {
 
 typedef union Expr_As {
     Number *number;
+    String *string;
     Identifier *identifier;
     Func_Call *func_call;
     Bin_Op *bin_op;

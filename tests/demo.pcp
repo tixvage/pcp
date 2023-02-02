@@ -12,6 +12,7 @@ fn get_number(): i32 {
 }
 
 fn main(): i32 {
+    var string : cstr = "Hello, World!\n";
     if 1 + 2 == 3 {
         var x : bool = 0 == 0;
         var b : i64 = -5 as i64;

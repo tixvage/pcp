@@ -195,6 +195,16 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->loc = as_token.loc;
             return expr;
         } break;
+        case TOKEN_STRING_LITERAL: {
+            Token as_token = parser_eat(parser);
+            String *string = malloc(sizeof(String));
+            string->value = as_token.value;
+            Expr *expr = malloc(sizeof(Expr));
+            expr->kind = EXPR_STRING;
+            expr->as = (Expr_As){.string = string};
+            expr->loc = as_token.loc;
+            return expr;
+        } break;
         case TOKEN_LPAREN: {
             parser_eat(parser);
             Expr *expr = parse_expr(parser);

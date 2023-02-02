@@ -29,6 +29,7 @@ void cgen_prepare(void) {
     fprintf(f, "typedef int32_t i32;\n");
     fprintf(f, "typedef uint64_t u64;\n");
     fprintf(f, "typedef int64_t i64;\n");
+    fprintf(f, "typedef const char *cstr;\n");
     fprintf(f, "\n");
 }
 
@@ -114,6 +115,9 @@ void cgen_expr(Expr *expr) {
     switch (expr->kind) {
         case EXPR_NUMBER: {
             fprintf(f, "%d", expr->as.number->value);
+        } break;
+        case EXPR_STRING: {
+            fprintf(f, "\"%s\"", expr->as.string->value);
         } break;
         case EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);

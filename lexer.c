@@ -115,14 +115,16 @@ Token lex_string(Lexer *lexer) {
         }
         
         if (escaped) {
-            if (lexer->c == 'n') current_char = '\n';
-            else if (lexer->c == 't') current_char = '\t';
-            else if (lexer-> c == '"') current_char = '\"';
+            if (lexer->c == 'n') current_char = 'n';
+            else if (lexer->c == 't') current_char = 't';
+            else if (lexer-> c == '"') current_char = '"';
             else {
                 printf("Invalid escape character: '%c'\n", lexer->c);
                 exit(1); // TODO: errors
             }
-            
+            value = realloc(value, (strlen(value) + 2) * sizeof(char));
+            char final[] = {'\\', 0};
+            strcat(value, final);
             escaped = false;
         }
 
