@@ -13,4 +13,10 @@
     } \
 } while(0)
 
+#define array_copy(array, copy) do { \
+    array.data = malloc(sizeof(array.data[0]) * copy.len); \
+    array.data = memcpy(array.data, copy.data, sizeof(array.data[0]) * copy.len); \
+    array.len = copy.len; \
+} while(0)
+
 #endif

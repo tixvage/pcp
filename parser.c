@@ -137,8 +137,8 @@ Expr *parse_expr(Parser *parser) {
 }
 
 Expr *parse_primary_expr(Parser *parser) {
-    Token_Type tk = parser->current_token.type;
-    switch (tk) {
+    Token tk = parser->current_token;
+    switch (tk.type) {
         case TOKEN_PLUS: {
             Un_Op *un_op = malloc(sizeof(Un_Op));
             un_op->op = parser_eat(parser);
@@ -146,6 +146,7 @@ Expr *parse_primary_expr(Parser *parser) {
             Expr *expr = malloc(sizeof(Expr));
             expr->kind = EXPR_UN_OP;
             expr->as = (Expr_As){.un_op = un_op};
+            expr->loc = un_op->op.loc;
             return expr;
         } break;
         case TOKEN_MINUS: {
@@ -155,6 +156,7 @@ Expr *parse_primary_expr(Parser *parser) {
             Expr *expr = malloc(sizeof(Expr));
             expr->kind = EXPR_UN_OP;
             expr->as = (Expr_As){.un_op = un_op};
+            expr->loc = un_op->op.loc;
             return expr;
         } break;
         case TOKEN_IDENTIFIER: {
@@ -167,6 +169,7 @@ Expr *parse_primary_expr(Parser *parser) {
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_FUNC_CALL;
                 expr->as = (Expr_As){.func_call = parse_func_call(parser)};
+                expr->loc = temp_token.loc;
                 return expr;
             } else {
                 parser->lexer = temp_lexer;
@@ -177,15 +180,18 @@ Expr *parse_primary_expr(Parser *parser) {
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_IDENTIFIER;
                 expr->as = (Expr_As){.identifier = identifier};
+                expr->loc = temp_token.loc;
                 return expr;
             }
         } break;
         case TOKEN_INTEGER_LITERAL: {
+            Token as_token = parser_eat(parser);
             Number *number = malloc(sizeof(Number));
-            number->value = atoi(parser_eat(parser).value);
+            number->value = atoi(as_token.value);
             Expr *expr = malloc(sizeof(Expr));
             expr->kind = EXPR_NUMBER;
             expr->as = (Expr_As){.number = number};
+            expr->loc = as_token.loc;
             return expr;
         } break;
         case TOKEN_LPAREN: {
@@ -213,6 +219,7 @@ Expr *parse_comparative_expr(Parser *parser) {
         root = malloc(sizeof(Expr));
         root->kind = EXPR_BIN_OP;
         root->as = (Expr_As){.bin_op = bin_op};
+        root->loc = op.loc;
     }
 
     return root;
@@ -232,6 +239,7 @@ Expr *parse_additive_expr(Parser *parser) {
         root = malloc(sizeof(Expr));
         root->kind = EXPR_BIN_OP;
         root->as = (Expr_As){.bin_op = bin_op};
+        root->loc = op.loc;
     }
 
     return root;
@@ -251,6 +259,7 @@ Expr *parse_multiplicitave_expr(Parser *parser) {
         root = malloc(sizeof(Expr));
         root->kind = EXPR_BIN_OP;
         root->as = (Expr_As){.bin_op = bin_op};
+        root->loc = op.loc;
     }
 
     return root;
@@ -271,7 +280,7 @@ Var_Decl *parse_var_decl(Parser *parser) {
 
     Var_Decl *var_decl = malloc(sizeof(Var_Decl));
     var_decl->constant = false;
-    var_decl->name = id.value;
+    var_decl->name = id;
     var_decl->type = var_type.value;
     var_decl->value = parse_expr(parser);
 
@@ -311,9 +320,9 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
     }
     
     {
-        Func_Arg first_arg = {0};
+        Var first_arg = {0};
         Token token = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-        first_arg.name = token.value;
+        first_arg.name = token;
         parser_expect(parser, TOKEN_COLON, "Expected `:`");
         first_arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
         array_push(fn_decl->args, first_arg);
@@ -327,9 +336,9 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
 
     while (!parser_eof(parser) && parser->current_token.type == TOKEN_COMMA) {
         parser_eat(parser);
-        Func_Arg arg = {0};
+        Var arg = {0};
         Token token = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-        arg.name = token.value;
+        arg.name = token;
         parser_expect(parser, TOKEN_COLON, "Expected `:`");
         arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
         array_push(fn_decl->args, arg);

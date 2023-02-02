@@ -9,10 +9,15 @@ typedef struct Ast Ast;
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 
-typedef struct Func_Arg {
+typedef struct Var {
     char *type;
-    char *name;
-} Func_Arg;
+    Token name;
+} Var;
+
+typedef struct Scope {
+    Stmt *data;
+    int len;
+} Scope;
 
 typedef struct Bin_Op {
     Expr *left;
@@ -47,10 +52,7 @@ typedef struct Var_Assign {
 } Var_Assign;
 
 typedef struct If_Stmt {
-    struct {
-        Stmt *data;
-        int len;
-    } body;
+    Scope body;
     Expr *expr;
 } If_Stmt;
 
@@ -60,7 +62,7 @@ typedef struct Return_Stmt {
 
 typedef struct Var_Decl {
     bool constant;
-    char *name;
+    Token name;
     char *type;
     Expr *value;
 } Var_Decl;
@@ -68,12 +70,9 @@ typedef struct Var_Decl {
 typedef struct Fn_Decl {
     Token name;
     char *return_type;
+    Scope body;
     struct {
-        Stmt *data;
-        int len;
-    } body;
-    struct {
-        Func_Arg *data;
+        Var *data;
         int len;
     } args;
 } Fn_Decl;
@@ -98,6 +97,7 @@ typedef union Expr_As {
 struct Expr {
     Expr_Kind kind;
     Expr_As as;
+    Loc loc;
 };
 
 typedef union Stmt_As {

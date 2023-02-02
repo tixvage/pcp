@@ -42,10 +42,10 @@ void cgen_function(Fn_Decl *fn) {
     if (fn->args.data == NULL) {
         fprintf(f, "void");
     } else {
-        Func_Arg first_arg = fn->args.data[0];
-        fprintf(f, "%s %s", first_arg.type, first_arg.name);
+        Var first_arg = fn->args.data[0];
+        fprintf(f, "%s %s", first_arg.type, first_arg.name.value);
         for (int i = 1; i < fn->args.len; i++) {
-            fprintf(f, ", %s %s", fn->args.data[i].type, fn->args.data[i].name);
+            fprintf(f, ", %s %s", fn->args.data[i].type, fn->args.data[i].name.value);
         }
     }
     fprintf(f, ") {\n");
@@ -98,7 +98,7 @@ void cgen_return_statment(Return_Stmt *return_stmt) {
 }
 
 void cgen_var_declaration(Var_Decl *var_decl) {
-    fprintf(f, "%s %s = ", var_decl->type, var_decl->name);
+    fprintf(f, "%s %s = ", var_decl->type, var_decl->name.value);
     cgen_expr(var_decl->value);
     fprintf(f, ";\n");
 }
