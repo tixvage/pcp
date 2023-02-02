@@ -201,6 +201,7 @@ Token get_next_token(Lexer *lexer) {
                 return lexer_advance_current(lexer, TOKEN_SEMICOLON);
                 break;
             case '.':
+                if (lexer_peek(lexer, 1) == '.') return lexer_advance_two(lexer, TOKEN_DOT_DOT);
                 return lexer_advance_current(lexer, TOKEN_DOT);
                 break;
             case '#':

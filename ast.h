@@ -66,6 +66,15 @@ typedef struct If_Stmt {
     Expr *expr;
 } If_Stmt;
 
+typedef struct For_Stmt {
+    Var var;
+    struct {
+        Expr *start;
+        Expr *end;
+    } range;
+    Scope body;
+} For_Stmt;
+
 typedef struct Return_Stmt {
     Expr *expr;
 } Return_Stmt;
@@ -118,6 +127,7 @@ struct Expr {
 typedef union Stmt_As {
     Var_Assign *var_assign;
     If_Stmt *if_stmt;
+    For_Stmt *for_stmt;
     Return_Stmt *return_stmt;
     Fn_Decl *fn_decl;
     Var_Decl *var_decl;
@@ -129,6 +139,7 @@ typedef enum Stmt_Kind {
     STMT_EMPTY,
     STMT_VAR_ASSIGN,
     STMT_IF_STMT,
+    STMT_FOR_STMT,
     STMT_RETURN_STMT,
     STMT_FN_DECL,
     STMT_VAR_DECL,

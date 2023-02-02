@@ -79,6 +79,26 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
                 }
                 check_scope(vars, stmt.as.if_stmt->body, fn, deep + 1);
             } break;
+            case STMT_FOR_STMT: {
+                Var possible_var = var_exist(vars, stmt.as.for_stmt->var.name.value);
+                if (possible_var.type) {
+                    error_msg(stmt.as.for_stmt->var.name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
+                    error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
+                    exit(1);
+                }
+                char *lhs = check_expr(vars, stmt.as.for_stmt->range.start);
+                char *rhs = check_expr(vars, stmt.as.for_stmt->range.end);
+
+                if (strcmp(lhs, "i32") != 0 || strcmp(rhs, "i32") != 0) {
+                    error_msg(stmt.as.for_stmt->range.start->loc, ERROR_FATAL, "range type must be `i32`");
+                    exit(1);
+                }
+
+                Var_Array for_vars = {0};
+                array_copy(for_vars, vars);
+                array_push(for_vars, stmt.as.for_stmt->var);
+                check_scope(for_vars, stmt.as.for_stmt->body, fn, deep + 1);
+            } break;
             case STMT_RETURN_STMT: {
                 char *type = check_expr(vars, stmt.as.return_stmt->expr);
                 if (type == NULL || strcmp(type, fn->return_type) != 0) {

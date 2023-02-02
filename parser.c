@@ -42,6 +42,7 @@ Fn_Decl *parse_extern_fn_decl(Parser *parser);
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl);
 Return_Stmt *parse_return_stmt(Parser *parser);
 If_Stmt *parse_if_stmt(Parser *parser);
+For_Stmt *parse_for_stmt(Parser *parser);
 Var_Assign *parse_var_assign(Parser *parser);
 Func_Call *parse_func_call(Parser *parser);
 void parse_func_call_args(Parser *parser, Func_Call *func_call);
@@ -103,6 +104,12 @@ Stmt parse_child_stmt(Parser *parser) {
             return (Stmt){
                 .kind = STMT_IF_STMT,
                 .as = {.if_stmt = parse_if_stmt(parser)},
+            };
+        } break;
+        case TOKEN_KEYWORD_FOR: {
+            return (Stmt){
+                .kind = STMT_FOR_STMT,
+                .as = {.for_stmt = parse_for_stmt(parser)},
             };
         } break;
         case TOKEN_IDENTIFIER: {
@@ -437,6 +444,29 @@ If_Stmt *parse_if_stmt(Parser *parser) {
     parser_expect(parser, TOKEN_RBRACE, "Expected `}`");
 
     return if_stmt;
+}
+
+For_Stmt *parse_for_stmt(Parser *parser) {
+    parser_eat(parser);
+    Token name = parser_expect(parser, TOKEN_IDENTIFIER, "expected id after `for`");
+    parser_expect(parser, TOKEN_KEYWORD_IN, "expected `in` after id");
+    Expr *start = parse_expr(parser);
+    parser_expect(parser, TOKEN_DOT_DOT, "expected `..` after starting value");
+    Expr *end = parse_expr(parser);
+    parser_expect(parser, TOKEN_LBRACE, "expected `{`");
+    
+    For_Stmt *for_stmt = malloc(sizeof(For_Stmt));
+    for_stmt->range.start = start;
+    for_stmt->range.end = end;
+    for_stmt->body.data = NULL;
+    for_stmt->var = (Var){.type = "i32", .name = name};
+
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
+        array_push(for_stmt->body, parse_child_stmt(parser));
+    }
+    parser_expect(parser, TOKEN_RBRACE, "expected `}`");
+
+    return for_stmt;
 }
 
 Var_Assign *parse_var_assign(Parser *parser) {

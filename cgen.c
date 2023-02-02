@@ -13,6 +13,7 @@ void cgen_functions(Parsed_File *decls);
 void cgen_function(Fn_Decl *fn);
 void cgen_statement(Stmt stmt);
 void cgen_if_statment(If_Stmt *if_stmt);
+void cgen_for_statment(For_Stmt *for_stmt);
 void cgen_return_statment(Return_Stmt *return_stmt);
 void cgen_var_declaration(Var_Decl *var_decl);
 void cgen_var_assignment(Var_Assign *var_assign);
@@ -66,6 +67,9 @@ void cgen_statement(Stmt stmt) {
         case STMT_IF_STMT: {
             cgen_if_statment(stmt.as.if_stmt);
         } break;
+        case STMT_FOR_STMT: {
+            cgen_for_statment(stmt.as.for_stmt);
+        } break;
         case STMT_RETURN_STMT: {
             cgen_return_statment(stmt.as.return_stmt);
         } break;
@@ -93,6 +97,18 @@ void cgen_if_statment(If_Stmt *if_stmt) {
     fprintf(f, ") {\n");
     for (int i = 0; i < if_stmt->body.len; i++) {
         cgen_statement(if_stmt->body.data[i]);
+    }
+    fprintf(f, "}\n");
+}
+
+void cgen_for_statment(For_Stmt *for_stmt) {
+    fprintf(f, "for (i32 %s = ", for_stmt->var.name.value);
+    cgen_expr(for_stmt->range.start);
+    fprintf(f, "; %s < ", for_stmt->var.name.value);
+    cgen_expr(for_stmt->range.end);
+    fprintf(f, "; %s++) {\n", for_stmt->var.name.value);
+    for (int i = 0; i < for_stmt->body.len; i++) {
+        cgen_statement(for_stmt->body.data[i]);
     }
     fprintf(f, "}\n");
 }
