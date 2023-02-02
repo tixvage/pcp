@@ -17,7 +17,7 @@ void check_function_decls(Parsed_File *decls);
 void check_function_statements(Parsed_File *decls);
 Fn_Decl *function_exist(char *name);
 void check_function(Fn_Decl *fn);
-void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn);
+void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep);
 Var var_exist(Var_Array vars, char *name);
 char *check_expr(Var_Array vars, Expr *expr);
 
@@ -59,12 +59,14 @@ void check_function(Fn_Decl *fn) {
         array_push(vars, fn->args.data[i]);
     }
 
-    check_scope(vars, fn->body, fn);
+    check_scope(vars, fn->body, fn, 0);
 }
 
-void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn) {
+void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
     Var_Array vars = {0};
     array_copy(vars, vars_copy);
+
+    bool return_found = false;
 
     for (int i = 0; i < scope.len; i++) {
         Stmt stmt = scope.data[i];
@@ -75,7 +77,7 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn) {
                     error_msg(stmt.as.if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `%s`", type);
                     exit(1);
                 }
-                check_scope(vars, stmt.as.if_stmt->body, fn);
+                check_scope(vars, stmt.as.if_stmt->body, fn, deep + 1);
             } break;
             case STMT_RETURN_STMT: {
                 char *type = check_expr(vars, stmt.as.return_stmt->expr);
@@ -84,6 +86,7 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn) {
                     error_msg(fn->name.loc, ERROR_NOTE, "`%s` defined here", fn->name.value);
                     exit(1);
                 }
+                return_found = true;
             } break;
             case STMT_VAR_DECL: {
                 Var possible_var = var_exist(vars, stmt.as.var_decl->name.value);
@@ -113,6 +116,10 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn) {
                 assert(0 && "unreacheable");
             } break;
         }
+    }
+
+    if (deep == 0 && !return_found && strcmp(fn->return_type, "void") != 0) {
+        error_msg(fn->name.loc, ERROR_FATAL, "`%s` reaches end of non-void function", fn->name.value);
     }
 }
 
