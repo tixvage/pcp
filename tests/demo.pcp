@@ -1,9 +1,11 @@
 extern fn puts(str: cstr): i32;
 
 fn main(): i32 {
-    var counter := 500;
-    for i in 0..counter / 50{
-        puts("hello");
+    var counter := 20;
+    for i in 0..counter {
+        if i % 3 == 0 {
+            puts("helo");
+        }
     }
     return 0;
 }

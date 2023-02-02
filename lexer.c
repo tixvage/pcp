@@ -194,6 +194,9 @@ Token get_next_token(Lexer *lexer) {
             case ']':
                 return lexer_advance_current(lexer, TOKEN_RBRACKET);
                 break;
+            case '%':
+                return lexer_advance_current(lexer, TOKEN_MODULO);
+                break;
             case ',':
                 return lexer_advance_current(lexer, TOKEN_COMMA);
                 break;

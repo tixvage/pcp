@@ -17,6 +17,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_RBRACE] = "}",
     [TOKEN_LBRACKET] = "[",
     [TOKEN_RBRACKET] = "]",
+    [TOKEN_MODULO] = "%",
     [TOKEN_PLUS] = "+",
     [TOKEN_PLUS_PLUS] = "++",
     [TOKEN_PLUS_EQUAL] = "+=",

@@ -274,7 +274,7 @@ Expr *parse_additive_expr(Parser *parser) {
 
 Expr *parse_multiplicitave_expr(Parser *parser) {
     Expr *root = parse_cast_expr(parser);
-    while (parser->current_token.type == TOKEN_ASTERISK || parser->current_token.type == TOKEN_SLASH) {
+    while (parser->current_token.type == TOKEN_ASTERISK || parser->current_token.type == TOKEN_SLASH || parser->current_token.type == TOKEN_MODULO) {
         Token op = parser_eat(parser);
         Expr *right = parse_cast_expr(parser);
 
