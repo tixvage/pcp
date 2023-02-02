@@ -20,13 +20,13 @@ void check_functions(Parsed_File *decls) {
             exit(1);
         }
         check_function(decls->fn_decls.data[i]);
-        array_push(info.funcs, decls->fn_decls.data[i]->name);
+        array_push(info.funcs, decls->fn_decls.data[i]);
     }
 }
 
 bool function_exist(char *name) {
     for (int i = 0; i < info.funcs.len; i++) {
-        if (strcmp(info.funcs.data[i], name) == 0) {
+        if (strcmp(info.funcs.data[i]->name, name) == 0) {
             return true;
         }
     }

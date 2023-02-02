@@ -5,7 +5,7 @@
 
 typedef struct Checker_Info {
     struct {
-        char **data;
+        Fn_Decl **data;
         int len;
     } funcs;
 } Checker_Info;
