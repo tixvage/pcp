@@ -35,7 +35,7 @@ void check_function_decls(Parsed_File *decls) {
 
 void check_function_statements(Parsed_File *decls) {
     for (int i = 0; i < info.funcs.len; i++) {
-        check_function(info.funcs.data[i]);
+        if (!info.funcs.data[i]->eextern) check_function(info.funcs.data[i]);
     }
 }
 
@@ -120,6 +120,7 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
 
     if (deep == 0 && !return_found && strcmp(fn->return_type, "void") != 0) {
         error_msg(fn->name.loc, ERROR_FATAL, "`%s` reaches end of non-void function", fn->name.value);
+        exit(1);
     }
 }
 

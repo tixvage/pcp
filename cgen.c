@@ -50,6 +50,10 @@ void cgen_function(Fn_Decl *fn) {
             fprintf(f, ", %s %s", fn->args.data[i].type, fn->args.data[i].name.value);
         }
     }
+    if (fn->eextern) {
+        fprintf(f, ");\n");
+        return;
+    }
     fprintf(f, ") {\n");
     for (int i = 0; i < fn->body.len; i++) {
         cgen_statement(fn->body.data[i]);

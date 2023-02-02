@@ -80,6 +80,7 @@ typedef struct Var_Decl {
 typedef struct Fn_Decl {
     Token name;
     char *return_type;
+    bool eextern;
     Scope body;
     struct {
         Var *data;

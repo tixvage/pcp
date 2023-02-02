@@ -1,23 +1,6 @@
-fn get_and_return(v: i32): i32 {
-    return v;
-}
-
-fn multiply(a: i32, b: i32): i32 {
-    var result := a * b;
-    return result;
-}
-
-fn get_number(): i32 {
-    return 20 + 50 * 2;
-}
+extern fn puts(str: cstr): i32;
 
 fn main(): i32 {
-    var string : cstr = "Hello, World!\n";
-    if 1 + 2 == 3 {
-        var x : bool = 0 == 0;
-        var b : i64 = -5 as i64;
-        var c: i64 = b;
-    }
-    var y := multiply(get_and_return(0), get_and_return(0));
-    return y - 35;
+    puts("hello");
+    return 0;
 }

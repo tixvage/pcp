@@ -38,6 +38,7 @@ Expr *parse_multiplicitave_expr(Parser *parser);
 Expr *parse_cast_expr(Parser *parser);
 Var_Decl *parse_var_decl(Parser *parser);
 Fn_Decl *parse_fn_decl(Parser *parser);
+Fn_Decl *parse_extern_fn_decl(Parser *parser);
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl);
 Return_Stmt *parse_return_stmt(Parser *parser);
 If_Stmt *parse_if_stmt(Parser *parser);
@@ -59,6 +60,12 @@ Stmt parse_top_stmt(Parser *parser) {
             return (Stmt){
                 .kind = STMT_FN_DECL,
                 .as = {.fn_decl = parse_fn_decl(parser)},
+            };
+        } break;
+        case TOKEN_KEYWORD_EXTERN: {
+            return (Stmt){
+                .kind = STMT_FN_DECL,
+                .as = {.fn_decl = parse_extern_fn_decl(parser)},
             };
         } break;
         case TOKEN_SEMICOLON: {
@@ -331,6 +338,7 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
     Fn_Decl *fn_decl = malloc(sizeof(Fn_Decl));
     fn_decl->body.data = NULL;
     fn_decl->args.data = NULL;
+    fn_decl->eextern = false;
 
     parser_eat(parser);
     Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
@@ -346,6 +354,26 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
         array_push(fn_decl->body, parse_child_stmt(parser));
     }
     parser_expect(parser, TOKEN_RBRACE, "Expected `}`");
+
+    return fn_decl;
+}
+
+Fn_Decl *parse_extern_fn_decl(Parser *parser) {
+    Fn_Decl *fn_decl = malloc(sizeof(Fn_Decl));
+    fn_decl->body.data = NULL;
+    fn_decl->args.data = NULL;
+    fn_decl->eextern = true;
+
+    parser_eat(parser);
+    parser_expect(parser, TOKEN_KEYWORD_FN, "expected `fn` after `extern`");
+    Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    parse_fn_decl_args(parser, fn_decl);
+    parser_expect(parser, TOKEN_COLON, "Expected `:`");
+    Token return_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    parser_expect(parser, TOKEN_SEMICOLON, "expected `;` after declaration of extern function");
+    
+    fn_decl->name = name;
+    fn_decl->return_type = return_type.value;
 
     return fn_decl;
 }
