@@ -10,9 +10,10 @@ typedef struct Lexer {
     uint32_t src_len;
     uint32_t i;
     char c;
+    Loc current_loc;
 } Lexer;
 
-void init_lexer(Lexer *lexer, char *src);
+void init_lexer(Lexer *lexer, char *src, const char *filepath);
 Token get_next_token(Lexer *lexer);
 
 #endif

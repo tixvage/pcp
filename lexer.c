@@ -15,17 +15,25 @@ char lexer_peek(Lexer *lexer, int offset);
 Token lex_id(Lexer *lexer);
 Token lex_number(Lexer *lexer);
 
-void init_lexer(Lexer *lexer, char *src) {
+void init_lexer(Lexer *lexer, char *src, const char *filepath) {
     lexer->src_len = strlen(src);
     lexer->src = src;
     lexer->i = 0;
     lexer->c = src[0];
+    lexer->current_loc = (Loc){1, 1, filepath};
 }
 
 void lexer_advance(Lexer *lexer) {
     if (lexer->i < lexer->src_len && lexer->c != '\0') {
+        if (lexer->c == '\n') {
+            lexer->current_loc.col += 1;
+            lexer->current_loc.row = 0;
+        }
         lexer->i += 1;
         lexer->c = lexer->src[lexer->i];
+        if (lexer->c != '\n') {
+            lexer->current_loc.row += 1;
+        }
     }
 }
 
@@ -40,14 +48,14 @@ Token lexer_advance_current(Lexer *lexer, Token_Type type) {
     char *buffer = calloc(2, sizeof(char));
     strcpy(buffer, value);
 
-    Token token = new_token(buffer, type);
+    Token token = new_token(buffer, type, lexer->current_loc);
     lexer_advance(lexer);
 
     return token;
 }
 
 Token lexer_advance_two(Lexer *lexer, Token_Type type) {
-    return lexer_advance_with(lexer, lexer_advance_with(lexer, new_token(KEYS[type], type)));
+    return lexer_advance_with(lexer, lexer_advance_with(lexer, new_token(KEYS[type], type, lexer->current_loc)));
 }
 
 void lexer_skip_ws(Lexer *lexer) {
@@ -60,6 +68,7 @@ char lexer_peek(Lexer *lexer, int offset) {
 
 Token lex_id(Lexer *lexer) {
     char *value = calloc(1, sizeof(char));
+    Loc loc = lexer->current_loc;
 
     while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_') {
         value = realloc(value, (strlen(value) + 2) * sizeof(char));
@@ -69,14 +78,15 @@ Token lex_id(Lexer *lexer) {
     }
 
     for (int i = KEYWORD_START + 1; i < COUNT_TOKEN; i++) {
-        if (strcmp(KEYS[i], value) == 0) return new_token(value, i);
+        if (strcmp(KEYS[i], value) == 0) return new_token(value, i, loc);
     }
 
-    return new_token(value, TOKEN_IDENTIFIER);
+    return new_token(value, TOKEN_IDENTIFIER, loc);
 }
 
 Token lex_number(Lexer *lexer) {
     char *value = calloc(1, sizeof(char));
+    Loc loc = lexer->current_loc;
 
     while (isdigit(lexer->c)) {
         value = realloc(value, (strlen(value) + 2) * sizeof(char));
@@ -85,11 +95,12 @@ Token lex_number(Lexer *lexer) {
         lexer_advance(lexer);
     }
 
-    return new_token(value, TOKEN_INTEGER_LITERAL);
+    return new_token(value, TOKEN_INTEGER_LITERAL, loc);
 }
 
 Token lex_string(Lexer *lexer) {
     char *value = calloc(1, sizeof(char));
+    Loc loc = lexer->current_loc;
     
     lexer_advance(lexer);
     bool escaped = false;
@@ -123,7 +134,7 @@ Token lex_string(Lexer *lexer) {
 
     lexer_advance(lexer);
     
-    return new_token(value, TOKEN_STRING_LITERAL);
+    return new_token(value, TOKEN_STRING_LITERAL, loc);
 }
 
 void lexer_skip_comment(Lexer *lexer) {
@@ -220,5 +231,5 @@ Token get_next_token(Lexer *lexer) {
         }
     }
 
-    return new_token(0, TOKEN_EOF);
+    return new_token(0, TOKEN_EOF, lexer->current_loc);
 }

@@ -73,6 +73,8 @@ void cgen_statement(Stmt stmt) {
             cgen_expr(stmt.as.expr);
             fprintf(f, ";\n");
         } break;
+        case STMT_EMPTY:  {
+        } break;
         default: {
             assert(0 && "unreacheable");
         } break;

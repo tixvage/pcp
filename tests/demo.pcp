@@ -1,7 +1,7 @@
 fn get_and_return(v: i32): i32 {
     return v;
 }
-
+  
 fn multiply(a: i32, b: i32): i32 {
     var result := a * b;
     return result;
@@ -13,10 +13,10 @@ fn get_number(): i32 {
 
 fn main(): i32 {
     if 1 + 2 == 3 {
-        var x := 0 == 0 == 0;
+        var x : i32 = 0 == 0;
     }
     var y : i32 = multiply(get_and_return(0), get_and_return(0));
     y = get_number();
-    y = get_number() + 50;
+    y = get_number();  50;
     return y - 35;
 }

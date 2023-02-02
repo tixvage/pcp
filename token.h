@@ -55,14 +55,21 @@ typedef enum Token_Type {
     COUNT_TOKEN,
 } Token_Type;
 
+typedef struct Loc {
+    int col;
+    int row;
+    const char *path;
+} Loc;
+
 typedef struct Token {
     char *value;
     Token_Type type;
+    Loc loc;
 } Token;
 
 extern char* KEYS[COUNT_TOKEN];
 
-Token new_token(char *value, Token_Type type);
+Token new_token(char *value, Token_Type type, Loc loc);
 char *token_type_to_str(Token token);
 
 #endif

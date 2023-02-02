@@ -49,10 +49,11 @@ char* KEYS[COUNT_TOKEN] = {
 
 #define TOKEN_STRING_CASE(token) case TOKEN_##token: return ""#token""; break
 
-Token new_token(char *value, Token_Type type) {
+Token new_token(char *value, Token_Type type, Loc loc) {
     Token token = {0};
     token.value = value;
     token.type = type;
+    token.loc = loc;
 
     return token;
 }

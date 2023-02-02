@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "utils.h"
+#include "error.h"
 
 bool parser_eof(const Parser *parser) {
     return parser->current_token.type == TOKEN_EOF;
@@ -20,7 +21,7 @@ Token parser_expect(Parser *parser, Token_Type type, const char *err) {
     Token prev = parser->current_token;
     parser->current_token = get_next_token(&parser->lexer);
     if (prev.type != type) {
-        fprintf(stderr, "%s\n", err);
+        error_msg(prev.loc, ERROR_FATAL, "%s", err);
         exit(1);
     }
 
@@ -60,11 +61,12 @@ Stmt parse_top_stmt(Parser *parser) {
             };
         } break;
         case TOKEN_SEMICOLON: {
-            fprintf(stderr, "extra `;`\n");
-            exit(1);
+            error_msg(tk.loc, ERROR_WARNING, "extra `;`");
+            parser_eat(parser);
+            return parse_top_stmt(parser);
         } break;
         default: {
-            fprintf(stderr, "empty expression in top\n");
+            error_msg(tk.loc, ERROR_FATAL, "invalid expression in top");
             exit(1);
         } break;
     }
@@ -80,7 +82,7 @@ Stmt parse_child_stmt(Parser *parser) {
             };
         } break;
         case TOKEN_KEYWORD_FN: {
-            fprintf(stderr, "functions not allowed inside a function\n");
+            error_msg(tk.loc, ERROR_FATAL, "functions not allowed inside a function");
             exit(1);
         } break;
         case TOKEN_KEYWORD_RETURN: {
@@ -113,15 +115,20 @@ Stmt parse_child_stmt(Parser *parser) {
             }
         } break;
         case TOKEN_SEMICOLON: {
-            fprintf(stderr, "extra `;`\n");
-            exit(1);
+            error_msg(tk.loc, ERROR_WARNING, "extra `;`");
+            parser_eat(parser);
+            return parse_child_stmt(parser);
         } break;
     }
     Stmt stmt = (Stmt){
         .kind = STMT_EXPR,
         .as = {.expr = parse_expr(parser)},
     };
-    parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+    if (stmt.as.expr == NULL) {
+        stmt.kind = STMT_EMPTY;
+    } else {
+        parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+    }
     return stmt;
 }
 
@@ -252,13 +259,13 @@ Expr *parse_multiplicitave_expr(Parser *parser) {
 Var_Decl *parse_var_decl(Parser *parser) {
     parser_eat(parser);
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-    Token_Type decl_type = parser_eat(parser).type;
+    Token decl_type = parser_eat(parser);
     Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "i32"};
-    if (decl_type == TOKEN_COLON) {
+    if (decl_type.type == TOKEN_COLON) {
         var_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type for variable");
         parser_expect(parser, TOKEN_EQUAL, "Expected `=`");
-    } else if (decl_type != TOKEN_COLON_EQUAL) {
-        fprintf(stderr, "expected `:` or `:=` after var %s\n", id.value);
+    } else if (decl_type.type != TOKEN_COLON_EQUAL) {
+        error_msg(decl_type.loc, ERROR_FATAL, "expected `:` or `:=` after `var %s`", id.value);
         exit(1);
     }
 

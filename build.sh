@@ -1,6 +1,6 @@
 #!/bin/sh
 
-sources="main.c io.c lexer.c token.c parser.c cgen.c typechecker.c"
+sources="main.c io.c lexer.c token.c parser.c cgen.c typechecker.c error.c"
 
 set -xe
 

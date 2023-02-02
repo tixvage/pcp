@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     char* content = read_entire_file(filename);
 
     Lexer lexer = {0};
-    init_lexer(&lexer, content);
+    init_lexer(&lexer, content, filename);
 
     Parser parser = {0};
     init_parser(&parser, lexer);

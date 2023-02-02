@@ -111,6 +111,7 @@ typedef union Stmt_As {
 
 typedef enum Stmt_Kind {
     STMT_INVALID,
+    STMT_EMPTY,
     STMT_VAR_ASSIGN,
     STMT_IF_STMT,
     STMT_RETURN_STMT,
