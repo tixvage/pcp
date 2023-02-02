@@ -90,6 +90,7 @@ typedef struct Fn_Decl {
     Token name;
     char *return_type;
     bool eextern;
+    bool has_va_arg;
     Scope body;
     struct {
         Var *data;

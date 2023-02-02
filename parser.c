@@ -344,6 +344,8 @@ Var_Decl *parse_var_decl(Parser *parser) {
 Fn_Decl *parse_fn_decl(Parser *parser) {
     Fn_Decl *fn_decl = malloc(sizeof(Fn_Decl));
     fn_decl->body.data = NULL;
+    fn_decl->body.len = 0;
+    fn_decl->args.len = 0;
     fn_decl->args.data = NULL;
     fn_decl->eextern = false;
 
@@ -368,6 +370,8 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
 Fn_Decl *parse_extern_fn_decl(Parser *parser) {
     Fn_Decl *fn_decl = malloc(sizeof(Fn_Decl));
     fn_decl->body.data = NULL;
+    fn_decl->body.len = 0;
+    fn_decl->args.len = 0;
     fn_decl->args.data = NULL;
     fn_decl->eextern = true;
 
@@ -391,14 +395,25 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
         parser_eat(parser);
         return;
     }
-    
+    bool has_va_arg = false;
+
     {
         Var first_arg = {0};
-        Token token = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-        first_arg.name = token;
-        parser_expect(parser, TOKEN_COLON, "Expected `:`");
-        first_arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
-        array_push(fn_decl->args, first_arg);
+        Token token = parser_eat(parser);
+        if (token.type == TOKEN_DOT_DOT_DOT) {
+            has_va_arg = true;
+            first_arg.name = token;
+            first_arg.type = "va_arg";
+            array_push(fn_decl->args, first_arg);
+        } else if (token.type == TOKEN_IDENTIFIER) {
+            first_arg.name = token;
+            parser_expect(parser, TOKEN_COLON, "Expected `:`");
+            first_arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
+            array_push(fn_decl->args, first_arg);
+        } else {
+            error_msg(token.loc, ERROR_FATAL, "expected id");
+            exit(1);
+        }
     }
     
 
@@ -410,13 +425,25 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
     while (!parser_eof(parser) && parser->current_token.type == TOKEN_COMMA) {
         parser_eat(parser);
         Var arg = {0};
-        Token token = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-        arg.name = token;
-        parser_expect(parser, TOKEN_COLON, "Expected `:`");
-        arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
-        array_push(fn_decl->args, arg);
+        Token token = parser_eat(parser);
+        if (token.type == TOKEN_DOT_DOT_DOT) {
+            has_va_arg = true;
+            arg.name = token;
+            arg.type = "va_arg";
+            array_push(fn_decl->args, arg);
+        } else if (token.type == TOKEN_IDENTIFIER) {
+            arg.name = token;
+            parser_expect(parser, TOKEN_COLON, "Expected `:`");
+            arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
+            array_push(fn_decl->args, arg);
+        } else {
+            error_msg(token.loc, ERROR_FATAL, "expected id");
+            exit(1);
+        }
     }
     parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
+
+    fn_decl->has_va_arg = has_va_arg;
 }
 
 Return_Stmt *parse_return_stmt(Parser *parser) {

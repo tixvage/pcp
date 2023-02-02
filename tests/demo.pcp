@@ -1,11 +1,9 @@
 extern fn puts(str: cstr): i32;
+extern fn printf(fmt: cstr, ...): i32;
 
 fn main(): i32 {
-    var counter := 20;
-    for i in 0..counter {
-        if i % 3 == 0 {
-            puts("helo");
-        }
+    for i in 0..5 {
+        printf("i = %d\n", i);
     }
     return 0;
 }

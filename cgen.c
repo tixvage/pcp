@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "ast.h"
 
@@ -46,9 +47,17 @@ void cgen_function(Fn_Decl *fn) {
         fprintf(f, "void");
     } else {
         Var first_arg = fn->args.data[0];
-        fprintf(f, "%s %s", first_arg.type, first_arg.name.value);
+        if (strcmp(first_arg.type, "va_arg") != 0) {
+            fprintf(f, "%s %s", first_arg.type, first_arg.name.value);
+        } else {
+            fprintf(f, "%s", first_arg.name.value);
+        }
         for (int i = 1; i < fn->args.len; i++) {
-            fprintf(f, ", %s %s", fn->args.data[i].type, fn->args.data[i].name.value);
+            if (strcmp(fn->args.data[i].type, "va_arg") != 0) {
+                fprintf(f, ", %s %s", fn->args.data[i].type, fn->args.data[i].name.value);
+            } else {
+                fprintf(f, ", %s", fn->args.data[i].name.value);
+            }
         }
     }
     if (fn->eextern) {

@@ -192,6 +192,7 @@ char *check_expr(Var_Array vars, Expr *expr) {
                 error_msg(expr->loc, ERROR_FATAL, "function `%s` could not found", expr->as.func_call->name);
                 exit(1);
             }
+            if (possible_fn->has_va_arg) return possible_fn->return_type;
             if (possible_fn->args.len != expr->as.func_call->args.len) {
                 error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
                 error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);

@@ -12,6 +12,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_SEMICOLON] = ";",
     [TOKEN_DOT] = ".",
     [TOKEN_DOT_DOT] = "..",
+    [TOKEN_DOT_DOT_DOT] = "...",
     [TOKEN_HASH] = "#",
     [TOKEN_LBRACE] = "{",
     [TOKEN_RBRACE] = "}",
