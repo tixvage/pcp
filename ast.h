@@ -58,6 +58,7 @@ typedef struct Struct_Construct {
         Struct_Construct_Arg *data;
         int len;
     } args;
+    char *type;
 } Struct_Construct;
 
 typedef struct Func_Call {

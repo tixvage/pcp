@@ -307,6 +307,7 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
                 }
             }
 
+            sc->type = wanted_type.str;
             return wanted_type;
         } break;
         default: {

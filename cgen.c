@@ -84,7 +84,7 @@ void cgen_struct(Struct_Decl *sc) {
     for (int i = 0; i < sc->vars.len; i++) {
         fprintf(f, "%s %s;\n", sc->vars.data[i]->type, sc->vars.data[i]->name.value);
     }
-    fprintf(f, "}\n");
+    fprintf(f, "} %s;\n", sc->name.value);
 }
 
 void cgen_statement(Stmt stmt) {
@@ -199,6 +199,16 @@ void cgen_expr(Expr *expr) {
             fprintf(f, "(%s)(", expr->as.cast->type.value);
             cgen_expr(expr->as.cast->expr);
             fprintf(f, ")");
+        } break;
+        case EXPR_STRUCT_CONSTRUCT: {
+            fprintf(f, "(%s){ ", expr->as.struct_construct->type);
+            for (int i = 0; i < expr->as.struct_construct->args.len; i++) {
+                Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];
+                fprintf(f, ".%s = ", arg.name.value);
+                cgen_expr(arg.expr);
+                fprintf(f, ", ");
+            }
+            fprintf(f, " }");
         } break;
         default: {
             assert(0 && "unreacheable");
