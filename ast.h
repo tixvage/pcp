@@ -84,6 +84,7 @@ typedef struct Var_Decl {
     Token name;
     char *type;
     Expr *value;
+    bool zero_init;
 } Var_Decl;
 
 typedef struct Fn_Decl {
@@ -97,6 +98,13 @@ typedef struct Fn_Decl {
         int len;
     } args;
 } Fn_Decl;
+
+typedef struct Struct_Decl {
+    Token name;
+    struct {
+
+    } vars;
+} Struct_Decl;
 
 typedef enum Expr_Kind {
     EXPR_INVALID,
@@ -131,6 +139,7 @@ typedef union Stmt_As {
     For_Stmt *for_stmt;
     Return_Stmt *return_stmt;
     Fn_Decl *fn_decl;
+    Struct_Decl *struct_decl;
     Var_Decl *var_decl;
     Expr *expr;
 } Stmt_As;
@@ -143,6 +152,7 @@ typedef enum Stmt_Kind {
     STMT_FOR_STMT,
     STMT_RETURN_STMT,
     STMT_FN_DECL,
+    STMT_STRUCT_DECL,
     STMT_VAR_DECL,
     STMT_EXPR,
 } Stmt_Kind;

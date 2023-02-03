@@ -13,10 +13,10 @@ typedef struct Parsed_File {
         Fn_Decl **data;
         int len;
     } fn_decls;
-    // struct {
-    //     Struct_Decl **data;
-    //     int len;
-    // } struct_decls;
+    struct {
+        Struct_Decl **data;
+        int len;
+    } struct_decls;
 } Parsed_File;
 
 typedef struct Parser {

@@ -6,8 +6,9 @@ fn multiply(n: i32): i32 {
 }
 
 fn main(): i32 {
+    b : i32;
     a := 50;
-    for i in 0..5 {
+    for i in b..a {
         printf("i = %d\n", multiply(i * 2));
     }
     return 0;

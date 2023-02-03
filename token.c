@@ -42,6 +42,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_ANGLE_BRACKET_RIGHT_EQUAL] = ">=",
     [TOKEN_KEYWORD_IF] = "if",
     [TOKEN_KEYWORD_FN] = "fn",
+    [TOKEN_KEYWORD_STRUCT] = "struct",
     [TOKEN_KEYWORD_VAR] = "var",
     [TOKEN_KEYWORD_FOR] = "for",
     [TOKEN_KEYWORD_IN] = "in",

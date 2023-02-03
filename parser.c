@@ -40,6 +40,7 @@ Var_Decl *parse_var_decl(Parser *parser);
 Fn_Decl *parse_fn_decl(Parser *parser);
 Fn_Decl *parse_extern_fn_decl(Parser *parser);
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl);
+Struct_Decl *parse_struct_decl(Parser *parser);
 Return_Stmt *parse_return_stmt(Parser *parser);
 If_Stmt *parse_if_stmt(Parser *parser);
 For_Stmt *parse_for_stmt(Parser *parser);
@@ -61,6 +62,12 @@ Stmt parse_top_stmt(Parser *parser) {
             return (Stmt){
                 .kind = STMT_FN_DECL,
                 .as = {.fn_decl = parse_fn_decl(parser)},
+            };
+        } break;
+        case TOKEN_KEYWORD_STRUCT: {
+            return (Stmt){
+                .kind = STMT_STRUCT_DECL,
+                .as =  {.struct_decl = parse_struct_decl(parser)},
             };
         } break;
         case TOKEN_KEYWORD_EXTERN: {
@@ -326,9 +333,16 @@ Var_Decl *parse_var_decl(Parser *parser) {
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
     Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "i32"};
+    bool zero_init = false;
     if (decl_type.type == TOKEN_COLON) {
         var_type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for variable");
-        parser_expect(parser, TOKEN_EQUAL, "expected `=`");
+        Token next = parser_eat(parser);
+        if (next.type == TOKEN_SEMICOLON) {
+            zero_init = true;
+        } else if (next.type != TOKEN_EQUAL) {
+            error_msg(next.loc, ERROR_FATAL, "expected `=`");
+            exit(1);
+        }
     } else if (decl_type.type != TOKEN_COLON_EQUAL) {
         error_msg(decl_type.loc, ERROR_FATAL, "expected `:` or `:=` after `var %s`", id.value);
         exit(1);
@@ -338,14 +352,19 @@ Var_Decl *parse_var_decl(Parser *parser) {
     var_decl->constant = false;
     var_decl->name = id;
     var_decl->type = var_type.value;
-    Expr *expr = parse_expr(parser);
-    if (expr == NULL) {
-        error_msg(decl_type.loc, ERROR_FATAL, "expected expression after `=` or `:=`");
-        exit(1);
+    Expr *expr = NULL;
+    if (!zero_init) {
+        expr = parse_expr(parser);
+        if (expr == NULL) {
+            error_msg(decl_type.loc, ERROR_FATAL, "expected expression after `=` or `:=`");
+            exit(1);
+        }
     }
     var_decl->value = expr;
-
-    parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+    var_decl->zero_init = zero_init;
+    if (!zero_init) {
+        parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+    }
 
     return var_decl;
 }
@@ -453,6 +472,10 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
     parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
 
     fn_decl->has_va_arg = has_va_arg;
+}
+
+Struct_Decl *parse_struct_decl(Parser *parser) {
+
 }
 
 Return_Stmt *parse_return_stmt(Parser *parser) {
@@ -563,6 +586,8 @@ void parse_file(Parser *parser) {
             array_push(parser->res.top_var_decls, stmt.as.var_decl);
         } else if (stmt.kind == STMT_FN_DECL) {
             array_push(parser->res.fn_decls, stmt.as.fn_decl);
+        } else if (stmt.kind == STMT_STRUCT_DECL) {
+            array_push(parser->res.struct_decls, stmt.as.struct_decl);
         }
     }
 }

@@ -130,7 +130,11 @@ void cgen_return_statment(Return_Stmt *return_stmt) {
 
 void cgen_var_declaration(Var_Decl *var_decl) {
     fprintf(f, "%s %s = ", var_decl->type, var_decl->name.value);
-    cgen_expr(var_decl->value);
+    if (var_decl->zero_init) {
+        fprintf(f, "{0}");
+    } else {
+        cgen_expr(var_decl->value);
+    }
     fprintf(f, ";\n");
 }
 

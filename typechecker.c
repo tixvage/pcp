@@ -116,10 +116,12 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
                     exit(1);
                 }
 
-                char *type = check_expr(vars, stmt.as.var_decl->value);
-                if (strcmp(type, stmt.as.var_decl->type) != 0) {
-                    error_msg(stmt.as.var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", stmt.as.var_decl->type, type);
-                    exit(1);
+                if (!stmt.as.var_decl->zero_init) {
+                    char *type = check_expr(vars, stmt.as.var_decl->value);
+                    if (strcmp(type, stmt.as.var_decl->type) != 0) {
+                        error_msg(stmt.as.var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", stmt.as.var_decl->type, type);
+                        exit(1);
+                    }
                 }
                 Var var = (Var){stmt.as.var_decl->type, stmt.as.var_decl->name};
                 array_push(vars, var);
