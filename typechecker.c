@@ -46,8 +46,24 @@ void check_struct_vars(void) {
 }
 
 void check_struct(Struct_Decl *sd) {
-    //TODO: check types of variables and variable names
-    (void) sd;
+    Var_Array vars = {0};
+    for (int i = 0; i < sd->vars.len; i++) {
+        Type possible_type = type_exist(sd->vars.data[i]->type);
+        if (!possible_type.str) {
+            error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "field `%s` of struct `%s` has undeclared type `%s`", sd->vars.data[i]->name.value, sd->name.value, sd->vars.data[i]->type);
+            exit(1);
+        }
+        Checked_Var possible_var = var_exist(vars, sd->vars.data[i]->name.value);
+        if (possible_var.type.str) {
+            error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "field `%s` already exists in struct `%s`", possible_var.name.value, sd->vars.data[i]->type);
+            error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
+            exit(1);
+        }
+
+        Checked_Var var = {sd->vars.data[i]->name, possible_type};
+        
+        array_push(vars, var);
+    }
 }
 
 void check_function_decls(Parsed_File *decls) {
@@ -252,7 +268,6 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
                     error_msg(expr->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
                     exit(1);
                 }
-                //TODO: check_struct
                 type = type_exist(possible_var->type);
 
                 root = root->child;
@@ -301,7 +316,16 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
         } break;
         case EXPR_CAST: {
             //TODO: check if cast is possible
-            check_expr(vars, expr->as.cast->expr, type_exist("auto"));
+            Type type = type_exist(expr->as.cast->type.value);
+            if (!type.str) {
+                error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type.value);
+                exit(1);
+            }
+            Type convert = type_exist("auto");
+            if (expr->as.cast->expr->kind == EXPR_STRUCT_CONSTRUCT) {
+                convert = type;
+            }
+            check_expr(vars, expr->as.cast->expr, convert);
             return type_exist(expr->as.cast->type.value);
         } break;
         case EXPR_STRUCT_CONSTRUCT: {
@@ -309,9 +333,13 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
             Struct_Decl *sd = struct_exist(wanted_type.str);
             Struct_Construct *sc = expr->as.struct_construct;
 
-            if (!sd && (wanted_type.flags & TYPE_NEEDS_INFERRING) == 0) {
-                error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type.str);
-                exit(1);
+            if (!sd) {
+                if ((wanted_type.flags & TYPE_NEEDS_INFERRING) != 0) {
+                    return wanted_type;
+                } else {
+                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type.str);
+                    exit(1);
+                }
             }
 
             if (sd->vars.len != sc->args.len) {
@@ -380,4 +408,5 @@ void typechecker_check(Parsed_File *decls) {
     check_struct_vars();
     check_function_decls(decls);
     check_function_statements();
+    (void) decls;
 }

@@ -10,34 +10,32 @@ fn get_name(str: cstr): cstr {
 }
 
 fn create_person(): Person {
-    return {
-        name = get_name("sussy baka"),
-        age = multiply(5 as i64) as i32 + 59,
-        mad = {
-            a = 0,
-            aaa = 0 == 1,
-        },
-    };
+    a := {
+        name = "sussy",
+        age = 20,
+    } as Person;
+    return a;
 }
 
-fn print_person(age: i32, name: cstr): void {
-    printf("%d %s", age, name);
+//typechecking X va_arg
+fn print_number_and_string(d: i32, s: cstr): void {
+    printf("%d %s\n", d, s);
 }
 
-struct Mad {
-    a: i32;
-    aaa: bool;
+fn print_person(p: Person): void {
+    print_number_and_string(p.age, p.name);
 }
 
 struct Person {
     age: i32;
     name: cstr;
-    mad: Mad;
 }
 
 fn main(): i32 {
-    a := create_person();
-    a = {};
-    print_person(a.mad.a, a.name);
+    print_person({
+        age = 55,
+        name = "sussy baka",
+    });
+    print_person(create_person());
     return 0;
 }
