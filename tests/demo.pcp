@@ -1,9 +1,14 @@
 extern fn puts(str: cstr): i32;
 extern fn printf(fmt: cstr, ...): i32;
 
+fn multiply(n: i32): i32 {
+    return (n * 2) as i32;
+}
+
 fn main(): i32 {
+    a := 50;
     for i in 0..5 {
-        printf("i = %d\n", i);
+        printf("i = %d\n", multiply(i * 2));
     }
     return 0;
 }

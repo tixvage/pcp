@@ -85,6 +85,9 @@ Stmt parse_child_stmt(Parser *parser) {
     Token tk = parser->current_token;
     switch (tk.type) {
         case TOKEN_KEYWORD_VAR: {
+            error_msg(tk.loc, ERROR_WARNING, "using `var` with variable declaration is deprecated");
+            error_msg(tk.loc, ERROR_NOTE, "remove `var`");
+            parser_eat(parser);
             return (Stmt){
                 .kind = STMT_VAR_DECL,
                 .as = {.var_decl = parse_var_decl(parser)},
@@ -123,6 +126,13 @@ Stmt parse_child_stmt(Parser *parser) {
                 return (Stmt){
                     .kind = STMT_VAR_ASSIGN,
                     .as = {.var_assign = parse_var_assign(parser)},
+                };
+            } else if (parser->current_token.type == TOKEN_COLON || parser->current_token.type == TOKEN_COLON_EQUAL) {
+                parser->lexer = temp_lexer;
+                parser->current_token = temp_token;
+                return (Stmt){
+                    .kind = STMT_VAR_DECL,
+                    .as = {.var_decl = parse_var_decl(parser)},
                 };
             } else {
                 parser->lexer = temp_lexer;
@@ -313,7 +323,6 @@ Expr *parse_cast_expr(Parser *parser) {
 }
 
 Var_Decl *parse_var_decl(Parser *parser) {
-    parser_eat(parser);
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
     Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "i32"};
