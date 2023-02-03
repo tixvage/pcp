@@ -37,6 +37,7 @@ struct Person {
 
 fn main(): i32 {
     a := create_person();
+    a = {};
     print_person(a.mad.a, a.name);
     return 0;
 }

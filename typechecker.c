@@ -177,7 +177,16 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
                 array_push(vars, check_var(var));
             } break;
             case STMT_VAR_ASSIGN: {
-                assert(0 && "todo");
+                Checked_Var possible_var = var_exist(vars, stmt.as.var_assign->var.value);
+                if (!possible_var.type.str) {
+                    error_msg(stmt.as.var_assign->var.loc, ERROR_FATAL, "variable `%s` is undeclared", stmt.as.var_assign->var.value);
+                    exit(1);
+                }
+                Type type = check_expr(vars, stmt.as.var_assign->expr, possible_var.type);
+                if (strcmp(possible_var.type.str, type.str) != 0) {
+                    error_msg(stmt.as.var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var.type.str, type.str);
+                    exit(1);
+                }
             } break;
             case STMT_EXPR: {
                 check_expr(vars, stmt.as.expr, type_exist("auto"));
