@@ -376,7 +376,7 @@ Struct_Construct *parse_struct_construct_expr(Parser *parser) {
 Var_Decl *parse_var_decl(Parser *parser) {
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
-    Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "i32"};
+    Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "auto"};
     bool zero_init = false;
     if (decl_type.type == TOKEN_COLON) {
         var_type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for variable");

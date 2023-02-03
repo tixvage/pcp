@@ -1,8 +1,19 @@
 extern fn puts(str: cstr): i32;
 extern fn printf(fmt: cstr, ...): i32;
 
-fn multiply(n: i32): i32 {
-    return (n * 2) as i32;
+fn multiply(n: i64): i64 {
+    return n * 2 as i64;
+}
+
+fn get_name(str: cstr): cstr {
+    return str;
+}
+
+fn create_person(): Person {
+    return {
+        name = get_name("sussy baka"),
+        age = multiply(5 as i64) as i32 + 59,
+    };
 }
 
 struct Person {
@@ -11,14 +22,7 @@ struct Person {
 }
 
 fn main(): i32 {
-    c : Person = { 
-        age = 50,
-        name = "hello",
-    };
-    b : i32;
-    a := 50;
-    for i in b..a {
-        printf("i = %d\n", multiply(i * 2));
-    }
+    b := 20;
+    a := create_person();
     return 0;
 }

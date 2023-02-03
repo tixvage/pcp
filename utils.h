@@ -19,4 +19,12 @@
     array.len = copy.len; \
 } while(0)
 
+#define array_append(array, x, l) do { \
+    for (int i = 0; i < l; i++) { \
+        array_push(array, x[i]); \
+    } \
+} while(0)
+
+#define BIT(x) (1<<(x))
+
 #endif
