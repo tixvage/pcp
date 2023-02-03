@@ -35,6 +35,7 @@ Expr *parse_primary_expr(Parser *parser);
 Expr *parse_comparative_expr(Parser *parser);
 Expr *parse_additive_expr(Parser *parser);
 Expr *parse_multiplicitave_expr(Parser *parser);
+Struct_Construct *parse_struct_construct_expr(Parser *parser);
 Expr *parse_cast_expr(Parser *parser);
 Var_Decl *parse_var_decl(Parser *parser);
 Fn_Decl *parse_fn_decl(Parser *parser);
@@ -236,6 +237,13 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->loc = as_token.loc;
             return expr;
         } break;
+        case TOKEN_LBRACE: {
+            Expr *expr = malloc(sizeof(Expr));
+            expr->kind = EXPR_STRUCT_CONSTRUCT;
+            expr->as = (Expr_As){.struct_construct = parse_struct_construct_expr(parser)};
+            expr->loc = tk.loc;
+            return expr;
+        } break;
         case TOKEN_LPAREN: {
             parser_eat(parser);
             Expr *expr = parse_expr(parser);
@@ -329,6 +337,42 @@ Expr *parse_cast_expr(Parser *parser) {
     return root;
 }
 
+Struct_Construct *parse_struct_construct_expr(Parser *parser) {
+    parser_expect(parser, TOKEN_LBRACE, "expected `{`");
+
+    Struct_Construct *sc = malloc(sizeof(Struct_Construct));
+    sc->args.data = NULL;
+    sc->args.len = 0;
+
+    if (parser->current_token.type == TOKEN_RBRACE) {
+        parser_eat(parser);
+        return sc;
+    }
+
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
+        Token name = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
+        parser_expect(parser, TOKEN_EQUAL, "expected `=`");
+        Expr *expr = parse_expr(parser);
+
+        Lexer temp_lexer = parser->lexer;
+        Token temp_token = parser_eat(parser);
+
+        Token tk = temp_token;
+        Struct_Construct_Arg arg = {name, expr};
+        array_push(sc->args, arg);
+        if (tk.type != TOKEN_COMMA && tk.type != TOKEN_RBRACE) {
+            error_msg(tk.loc, ERROR_FATAL, "expected `,` or `}`");
+            exit(1);
+        } else if (tk.type == TOKEN_RBRACE){
+            parser->lexer = temp_lexer;
+            parser->current_token = temp_token;
+        }
+    }
+
+    parser_expect(parser, TOKEN_RBRACE, "expected `}`");
+    return sc;
+}
+
 Var_Decl *parse_var_decl(Parser *parser) {
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
@@ -340,7 +384,7 @@ Var_Decl *parse_var_decl(Parser *parser) {
         if (next.type == TOKEN_SEMICOLON) {
             zero_init = true;
         } else if (next.type != TOKEN_EQUAL) {
-            error_msg(next.loc, ERROR_FATAL, "expected `=`");
+            error_msg(next.loc, ERROR_FATAL, "expected `=` or `;`");
             exit(1);
         }
     } else if (decl_type.type != TOKEN_COLON_EQUAL) {
@@ -475,7 +519,21 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
 }
 
 Struct_Decl *parse_struct_decl(Parser *parser) {
+    parser_eat(parser);
+    Token name = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
+    parser_expect(parser, TOKEN_LBRACE, "expected `{`");
 
+    Struct_Decl *struct_decl = malloc(sizeof(Struct_Decl));
+    struct_decl->name = name;
+    struct_decl->vars.data = NULL;
+    struct_decl->vars.len = 0;
+
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
+        array_push(struct_decl->vars, parse_var_decl(parser));
+    }
+    parser_expect(parser, TOKEN_RBRACE, "expected `}`");
+
+    return struct_decl;
 }
 
 Return_Stmt *parse_return_stmt(Parser *parser) {

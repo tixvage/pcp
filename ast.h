@@ -48,6 +48,18 @@ typedef struct Identifier {
     char *name;
 } Identifier;
 
+typedef struct Struct_Construct_Arg {
+    Token name;
+    Expr *expr;
+} Struct_Construct_Arg;
+
+typedef struct Struct_Construct {
+    struct {
+        Struct_Construct_Arg *data;
+        int len;
+    } args;
+} Struct_Construct;
+
 typedef struct Func_Call {
     char *name;
     struct {
@@ -102,7 +114,8 @@ typedef struct Fn_Decl {
 typedef struct Struct_Decl {
     Token name;
     struct {
-
+        Var_Decl **data;
+        int len;
     } vars;
 } Struct_Decl;
 
@@ -115,6 +128,7 @@ typedef enum Expr_Kind {
     EXPR_BIN_OP,
     EXPR_UN_OP,
     EXPR_CAST,
+    EXPR_STRUCT_CONSTRUCT,
 } Expr_Kind;
 
 typedef union Expr_As {
@@ -125,6 +139,7 @@ typedef union Expr_As {
     Bin_Op *bin_op;
     Un_Op *un_op;
     Cast *cast;
+    Struct_Construct *struct_construct;
 } Expr_As;
 
 struct Expr {

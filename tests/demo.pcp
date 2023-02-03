@@ -5,7 +5,16 @@ fn multiply(n: i32): i32 {
     return (n * 2) as i32;
 }
 
+struct Person {
+    age: i32;
+    name: cstr;
+}
+
 fn main(): i32 {
+    c : Person = { 
+        age = 50,
+        name = "hello",
+    };
     b : i32;
     a := 50;
     for i in b..a {

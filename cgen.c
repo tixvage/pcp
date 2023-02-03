@@ -11,7 +11,9 @@ FILE *f;
 
 void cgen_prepare(void);
 void cgen_functions(Parsed_File *decls);
+void cgen_structs(Parsed_File *decls);
 void cgen_function(Fn_Decl *fn);
+void cgen_struct(Struct_Decl *sc);
 void cgen_statement(Stmt stmt);
 void cgen_if_statment(If_Stmt *if_stmt);
 void cgen_for_statment(For_Stmt *for_stmt);
@@ -41,6 +43,12 @@ void cgen_functions(Parsed_File *decls) {
     }
 }
 
+void cgen_structs(Parsed_File *decls) {
+    for (int i = 0; i < decls->struct_decls.len; i++) {
+        cgen_struct(decls->struct_decls.data[i]);
+    }
+}
+
 void cgen_function(Fn_Decl *fn) {
     fprintf(f, "%s %s(", fn->return_type, fn->name.value);
     if (fn->args.data == NULL) {
@@ -67,6 +75,14 @@ void cgen_function(Fn_Decl *fn) {
     fprintf(f, ") {\n");
     for (int i = 0; i < fn->body.len; i++) {
         cgen_statement(fn->body.data[i]);
+    }
+    fprintf(f, "}\n");
+}
+
+void cgen_struct(Struct_Decl *sc) {
+    fprintf(f, "typedef struct %s {\n", sc->name.value);
+    for (int i = 0; i < sc->vars.len; i++) {
+        fprintf(f, "%s %s;\n", sc->vars.data[i]->type, sc->vars.data[i]->name.value);
     }
     fprintf(f, "}\n");
 }
@@ -197,6 +213,7 @@ void cgen_generate(Parsed_File *decls, const char *path) {
         exit(1);
     }
     cgen_prepare();
+    cgen_structs(decls);
     cgen_functions(decls);
     fclose(f);
 }
