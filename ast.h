@@ -8,6 +8,7 @@
 typedef struct Ast Ast;
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
+typedef struct Identifier Identifier;
 
 typedef struct Var {
     char *type;
@@ -44,9 +45,10 @@ typedef struct String {
     char *value;
 } String;
 
-typedef struct Identifier {
+struct Identifier {
     char *name;
-} Identifier;
+    struct Identifier *child;
+};
 
 typedef struct Struct_Construct_Arg {
     Token name;

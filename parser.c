@@ -204,12 +204,32 @@ Expr *parse_primary_expr(Parser *parser) {
                 expr->as = (Expr_As){.func_call = parse_func_call(parser)};
                 expr->loc = temp_token.loc;
                 return expr;
+            } else if (parser->current_token.type == TOKEN_DOT) {
+                parser->lexer = temp_lexer;
+                parser->current_token = temp_token;
+
+                Identifier *identifier = malloc(sizeof(Identifier));
+                identifier->name = parser_eat(parser).value;
+                parser_expect(parser, TOKEN_DOT, "expected `.`");
+                Expr *child = parse_primary_expr(parser);
+                if (child->kind != EXPR_IDENTIFIER) {
+                    error_msg(child->loc, ERROR_FATAL, "right side must be id");
+                    exit(1);
+                }
+                identifier->child = child->as.identifier;
+
+                Expr *expr = malloc(sizeof(Expr));
+                expr->kind = EXPR_IDENTIFIER;
+                expr->as = (Expr_As){.identifier = identifier};
+                expr->loc = temp_token.loc;
+                return expr;
             } else {
                 parser->lexer = temp_lexer;
                 parser->current_token = temp_token;
 
                 Identifier *identifier = malloc(sizeof(Identifier));
                 identifier->name = parser_eat(parser).value;
+                identifier->child = NULL;
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_IDENTIFIER;
                 expr->as = (Expr_As){.identifier = identifier};

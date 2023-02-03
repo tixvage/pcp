@@ -11,6 +11,7 @@
 Checker_Info info = {0};
 
 const Type builtin_types[] = {
+    {"void", TYPE_VOID},
     {"i8", TYPE_NUMBER},
     {"i16", TYPE_NUMBER},
     {"i32", TYPE_NUMBER},
@@ -44,9 +45,9 @@ void check_struct_vars(void) {
     }
 }
 
-void check_struct(Struct_Decl *sc) {
+void check_struct(Struct_Decl *sd) {
     //TODO: check types of variables and variable names
-    (void) sc;
+    (void) sd;
 }
 
 void check_function_decls(Parsed_File *decls) {
@@ -204,6 +205,15 @@ Checked_Var var_exist(Var_Array vars, char *name) {
     return (Checked_Var){0};
 }
 
+Var_Decl *struct_var_exist(Struct_Decl *sd, char *name) {
+    for (int i = 0; i < sd->vars.len; i++) {
+        if (strcmp(sd->vars.data[i]->name.value, name) == 0) {
+            return sd->vars.data[i];
+        }
+    }
+    return NULL;
+}
+
 Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
     switch (expr->kind) {
         case EXPR_NUMBER: {
@@ -216,13 +226,29 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
             return type_exist("cstr");
         } break;
         case EXPR_IDENTIFIER: {
-            Checked_Var possible_var = var_exist(vars, expr->as.identifier->name);
-            if (possible_var.type.str) {
-                return possible_var.type;
-            } else {
+            Type type = var_exist(vars, expr->as.identifier->name).type;
+            if (!type.str) {
                 error_msg(expr->loc, ERROR_FATAL, "variable `%s` could not found in scope", expr->as.identifier->name);
                 exit(1);
             }
+            Identifier *root = expr->as.identifier;
+            while (root->child) {
+                Struct_Decl *possible_struct = struct_exist(type.str);
+                if (!possible_struct) {
+                    error_msg(expr->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+                    exit(1);
+                }
+                Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
+                if (!possible_var) {
+                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
+                    exit(1);
+                }
+                //TODO: check_struct
+                type = type_exist(possible_var->type);
+
+                root = root->child;
+            }
+            return type;
         } break;
         case EXPR_BIN_OP: {
             Type lhs = check_expr(vars, expr->as.bin_op->left, wanted_type);

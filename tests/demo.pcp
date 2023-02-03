@@ -13,16 +13,30 @@ fn create_person(): Person {
     return {
         name = get_name("sussy baka"),
         age = multiply(5 as i64) as i32 + 59,
+        mad = {
+            a = 0,
+            aaa = 0 == 1,
+        },
     };
+}
+
+fn print_person(age: i32, name: cstr): void {
+    printf("%d %s", age, name);
+}
+
+struct Mad {
+    a: i32;
+    aaa: bool;
 }
 
 struct Person {
     age: i32;
     name: cstr;
+    mad: Mad;
 }
 
 fn main(): i32 {
-    b := 20;
     a := create_person();
+    print_person(a.mad.a, a.name);
     return 0;
 }

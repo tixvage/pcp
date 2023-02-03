@@ -170,6 +170,14 @@ void cgen_expr(Expr *expr) {
         } break;
         case EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);
+            if (!expr->as.identifier->name) {
+                return;
+            }
+            Identifier *root = expr->as.identifier;
+            while (root->child) {
+                fprintf(f, ".%s", root->child->name);
+                root = root->child;
+            }
         } break;
         case EXPR_BIN_OP: {
             cgen_expr(expr->as.bin_op->left);

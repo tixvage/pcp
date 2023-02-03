@@ -14,8 +14,9 @@ typedef enum Type_Flag {
     TYPE_STRING = BIT(1),
     TYPE_BOOLEAN = BIT(2),
     TYPE_USER_DEFINED = BIT(3),
-    TYPE_NEEDS_INFERRING = BIT(4),
-    TYPE_STRUCT = BIT(5) | TYPE_USER_DEFINED,
+    TYPE_VOID = BIT(4),
+    TYPE_NEEDS_INFERRING = BIT(5),
+    TYPE_STRUCT = BIT(6) | TYPE_USER_DEFINED,
 } Type_Flag;
 
 typedef struct Checker_Info {
@@ -52,9 +53,10 @@ void check_function_statements(void);
 Fn_Decl *function_exist(char *name);
 Struct_Decl *struct_exist(char *name);
 void check_function(Fn_Decl *fn);
-void check_struct(Struct_Decl *sc);
+void check_struct(Struct_Decl *sd);
 void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep);
 Checked_Var var_exist(Var_Array vars, char *name);
+Var_Decl *struct_var_exist(Struct_Decl *sd, char *name);
 Type check_expr(Var_Array vars, Expr *expr, Type wanted_type);
 Type type_exist(char *str);
 Checked_Var check_var(Var var);
