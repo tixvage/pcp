@@ -59,6 +59,25 @@ void check_struct(Struct_Decl *sd) {
             error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
             exit(1);
         }
+        if (!sd->vars.data[i]->zero_init) {
+            Type possible_var_type = type_exist(sd->vars.data[i]->type);
+            if (!possible_var_type.str) {
+                error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "variable `%s` has invalid type", sd->vars.data[i]->name.value);
+                exit(1);
+            }
+            Type type = check_expr(vars, sd->vars.data[i]->value, possible_var_type);
+            if (strcmp(sd->vars.data[i]->type, "auto") == 0) {
+                if (strcmp(type.str, "auto") == 0) {
+                    error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "type of `%s` could not be inferred", sd->vars.data[i]->name.value);
+                    exit(1);
+                }
+                sd->vars.data[i]->type = type.str;
+            }
+            if (strcmp(sd->vars.data[i]->type, "auto") != 0 && strcmp(type.str, sd->vars.data[i]->type) != 0) {
+                error_msg(sd->vars.data[i]->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", sd->vars.data[i]->type, type.str);
+                exit(1);
+            }
+        }
 
         Checked_Var var = {sd->vars.data[i]->name, possible_type};
         
@@ -359,11 +378,49 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
                 }
             }
 
-            if (sd->vars.len != sc->args.len) {
+            int non_default_fields = sd->vars.len;
+            for (int i = 0; i < sd->vars.len; i++) {
+                if (sd->vars.data[i]->value) non_default_fields -= 1;
+            }
+
+            if (non_default_fields > sc->args.len) {
+                error_msg(expr->loc, ERROR_FATAL, "struct `%s` needs at least %d fields but %d given", sd->name.value, non_default_fields, sc->args.len);
+                error_msg(sd->name.loc, ERROR_NOTE, "`%s` defined here", sd->name.value);
+                exit(1);
+            } else if (sc->args.len > sd->vars.len) {
                 error_msg(expr->loc, ERROR_FATAL, "struct `%s` has %d fields but %d given", sd->name.value, sd->vars.len, sc->args.len);
                 error_msg(sd->name.loc, ERROR_NOTE, "`%s` defined here", sd->name.value);
                 exit(1);
             }
+
+            struct {
+                Struct_Construct_Arg *data;
+                int len;
+            } default_args = {0};
+
+            for (int i = 0; i < sd->vars.len; i++) {
+                //if (sd->vars.data[i]->value) continue;
+                bool found = false;
+                for (int j = 0; j < sc->args.len; j++) {
+                    if (strcmp(sd->vars.data[i]->name.value, sc->args.data[j].name.value) == 0) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    if (sd->vars.data[i]->value) {
+                        Struct_Construct_Arg default_arg = {0};
+                        default_arg.name = sd->vars.data[i]->name;
+                        default_arg.expr = sd->vars.data[i]->value;
+                        array_push(default_args, default_arg);
+                    } else {
+                        error_msg(expr->loc, ERROR_FATAL, "struct `%s` needs field named `%s`", sd->name.value, sd->vars.data[i]->name.value);
+                        error_msg(sd->name.loc, ERROR_NOTE, "`%s` defined here", sd->name.value);
+                        exit(1);
+                    }
+                }
+            }
+
+            array_append(sc->args, default_args.data, default_args.len);
 
             for (int i = 0; i < sc->args.len; i++) {
                 bool found = false;

@@ -1,23 +1,6 @@
-//extern fn puts(str: cstr): i32;
 extern fn printf(fmt: cstr, ...): i32;
-//
-//fn multiply(n: i64): i64 {
-//    return n * 2 as i64;
-//}
-//
-//fn get_name(str: cstr): cstr {
-//    return str;
-//}
-//
-//fn create_person(): Person {
-//    return {
-//        name = "sussy",
-//        age = 20,
-//    };
-//}
-//
-//typechecking X va_arg
-fn print_number_and_string(d: i32 = 20, s: cstr): void {
+
+fn print_number_and_string(d: i32, s: cstr): void {
     printf("%d %s\n", d, s);
 }
 
@@ -26,24 +9,30 @@ fn print_person(p: Person): void {
 }
 
 struct Person {
-    age: i32;
+    age := 20;
     name: cstr;
 }
 
-fn main(): i32 {
-    person := {
-        age = 55,
-        name = "sussy baka",
+struct Dumb {
+    a := "baka";
+    b := 20;
+    c: Person = {
+        name = "sussy",
     } as Person;
-    print_person(person);
-    person.age = 30;
-    print_person(person);
-    person = {
-        name = "a",
-        age = 20
+}
+
+fn main(): i32 {
+    p := {name = "hello"} as Person;
+    print_person(p);
+    p = {age = 30, name = "yo"};
+    print_person(p);
+    a := { age = 35, name = "sussy" } as Person;
+    p = a;
+    print_person(p);
+    dumber : Dumb = {
+        a = "hello",
     };
-    print_person(person);
-    person.name = "to";
-    print_person(person);
+    p = dumber.c;
+    print_person(p);
     return 0;
 }
