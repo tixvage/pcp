@@ -193,14 +193,31 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
                 array_push(vars, check_var(var));
             } break;
             case STMT_VAR_ASSIGN: {
-                Checked_Var possible_var = var_exist(vars, stmt.as.var_assign->var.value);
+                Checked_Var possible_var = var_exist(vars, stmt.as.var_assign->var->name);
+                Type type = possible_var.type;
                 if (!possible_var.type.str) {
-                    error_msg(stmt.as.var_assign->var.loc, ERROR_FATAL, "variable `%s` is undeclared", stmt.as.var_assign->var.value);
+                    error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "variable `%s` is undeclared", stmt.as.var_assign->var->name);
                     exit(1);
                 }
-                Type type = check_expr(vars, stmt.as.var_assign->expr, possible_var.type);
-                if (strcmp(possible_var.type.str, type.str) != 0) {
-                    error_msg(stmt.as.var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var.type.str, type.str);
+                Identifier *root = stmt.as.var_assign->var;
+                while (root->child) {
+                    Struct_Decl *possible_struct = struct_exist(type.str);
+                    if (!possible_struct) {
+                        error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+                        exit(1);
+                    }
+                    Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
+                    if (!possible_var) {
+                        error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
+                        exit(1);
+                    }
+                    type = type_exist(possible_var->type);
+
+                    root = root->child;
+                }
+                Type given_type = check_expr(vars, stmt.as.var_assign->expr, type);
+                if (strcmp(type.str, given_type.str) != 0) {
+                    error_msg(stmt.as.var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", type.str, given_type.str);
                     exit(1);
                 }
             } break;

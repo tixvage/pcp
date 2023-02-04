@@ -72,7 +72,8 @@ typedef struct Func_Call {
 } Func_Call;
 
 typedef struct Var_Assign {
-    Token var;
+    Loc loc;
+    Identifier *var;
     Expr *expr;
 } Var_Assign;
 

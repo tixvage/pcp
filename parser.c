@@ -160,7 +160,18 @@ Stmt parse_child_stmt(Parser *parser) {
     if (stmt.as.expr == NULL) {
         stmt.kind = STMT_EMPTY;
     } else {
-        parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+        if (stmt.as.expr->kind == EXPR_IDENTIFIER && parser->current_token.type == TOKEN_EQUAL) {
+            parser_eat(parser);
+            Expr *expr = parse_expr(parser);
+            parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+            Var_Assign *var_assign = malloc(sizeof(Var_Assign));
+            var_assign->var = stmt.as.expr->as.identifier;
+            var_assign->expr = expr;
+            stmt.kind = STMT_VAR_ASSIGN;
+            stmt.as.var_assign = var_assign;
+        } else {
+            parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+        }
     }
     return stmt;
 }
@@ -607,15 +618,20 @@ For_Stmt *parse_for_stmt(Parser *parser) {
 }
 
 Var_Assign *parse_var_assign(Parser *parser) {
-    Token var = parser_eat(parser);
-    assert(var.type == TOKEN_IDENTIFIER);
+    Token tk = parser_eat(parser);
+    assert(tk.type == TOKEN_IDENTIFIER);
     parser_expect(parser, TOKEN_EQUAL, "Expected `=`");
 
     Expr *expr = parse_expr(parser);
 
     Var_Assign *var_assign = malloc(sizeof(Var_Assign));
-    var_assign->var = var;
+    var_assign->loc = tk.loc;
     var_assign->expr = expr;
+
+    Identifier *id = malloc(sizeof(Identifier));
+    id->name = tk.value;
+    id->child = NULL;
+    var_assign->var = id;
 
     parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
     return var_assign;

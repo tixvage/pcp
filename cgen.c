@@ -155,7 +155,13 @@ void cgen_var_declaration(Var_Decl *var_decl) {
 }
 
 void cgen_var_assignment(Var_Assign *var_assign) {
-    fprintf(f, "%s = ", var_assign->var.value);
+    fprintf(f, "%s", var_assign->var->name);
+    Identifier *root = var_assign->var;
+    while (root->child) {
+        fprintf(f, ".%s", root->child->name);
+        root = root->child;
+    }
+    fprintf(f, " = ");
     cgen_expr(var_assign->expr);
     fprintf(f, ";\n");
 }
@@ -170,9 +176,6 @@ void cgen_expr(Expr *expr) {
         } break;
         case EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);
-            if (!expr->as.identifier->name) {
-                return;
-            }
             Identifier *root = expr->as.identifier;
             while (root->child) {
                 fprintf(f, ".%s", root->child->name);
