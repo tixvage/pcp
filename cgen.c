@@ -10,6 +10,8 @@
 FILE *f;
 
 void cgen_prepare(void);
+void cgen_structs(Checked_File *decls);
+void cgen_struct(Checked_Struct_Decl *sc);
 void cgen_functions(Checked_File *decls);
 void cgen_function(Checked_Fn_Decl *fn);
 void cgen_statement(Checked_Stmt stmt);
@@ -33,6 +35,20 @@ void cgen_prepare(void) {
     fprintf(f, "typedef int64_t i64;\n");
     fprintf(f, "typedef const char *cstr;\n");
     fprintf(f, "\n");
+}
+
+void cgen_structs(Checked_File *decls) {
+    for (int i = 0; i < decls->structs.len; i++) {
+        cgen_struct(decls->structs.data[i]);
+    }
+}
+
+void cgen_struct(Checked_Struct_Decl *sc) {
+    fprintf(f, "typedef struct %s {\n", sc->name.value);
+    for (int i = 0; i < sc->vars.len; i++) {
+        fprintf(f, "%s %s;\n", sc->vars.data[i]->type.str, sc->vars.data[i]->name.value);
+    }
+    fprintf(f, "} %s;\n", sc->name.value);
 }
 
 void cgen_functions(Checked_File *decls) {
@@ -195,16 +211,16 @@ void cgen_expr(Checked_Expr *expr) {
             cgen_expr(expr->as.cast->expr);
             fprintf(f, ")");
         } break;
-        /*case EXPR_STRUCT_CONSTRUCT: {
-            fprintf(f, "(%s){ ", expr->as.struct_construct->type);
+        case EXPR_STRUCT_CONSTRUCT: {
+            fprintf(f, "(%s){ ", expr->as.struct_construct->type.str);
             for (int i = 0; i < expr->as.struct_construct->args.len; i++) {
-                Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];
+                Checked_Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];
                 fprintf(f, ".%s = ", arg.name.value);
                 cgen_expr(arg.expr);
                 fprintf(f, ", ");
             }
             fprintf(f, " }");
-        } break;*/
+        } break;
         default: {
             assert(0 && "unreacheable");
         } break;
@@ -218,6 +234,7 @@ void cgen_generate(Checked_File *decls, const char *path) {
         exit(1);
     }
     cgen_prepare();
+    cgen_structs(decls);
     cgen_functions(decls);
     fclose(f);
 }

@@ -38,11 +38,13 @@ void check_structs(Parsed_File *decls) {
         possible_decl = calloc(1, sizeof(Checked_Fn_Decl));
         Var_Array vars = {0};
         for (int j = 0; j < decl->vars.len; j++) {
-            Checked_Var_Decl *var_decl = check_var_decl(decl->vars.data[i], &vars, NULL, 0);
+            Checked_Var_Decl *var_decl = check_var_decl(decl->vars.data[j], &vars, NULL, 0);
             array_push(possible_decl->vars, var_decl);
         }
+        possible_decl->name = decl->name;
         Type type = {decl->name.value, TYPE_STRUCT};
         array_push(info.types, type);
+        array_push(info.structs, possible_decl);
     }
 }
 
@@ -249,7 +251,8 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
         }
     }
 
-    Checked_Var var = {var_decl->name, res->value->type};
+    Checked_Var var = {var_decl->name, possible_var_type};
+    res->type = possible_var_type;
     array_push(*vars, var);
 
     return res;
@@ -299,6 +302,24 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 error_msg(expr->loc, ERROR_FATAL, "variable `%s` could not found in scope", expr->as.identifier->name);
                 exit(1);
             }
+
+            Identifier *root = expr->as.identifier;
+            while (root->child) {
+                Checked_Struct_Decl *possible_struct = struct_exist(type.str);
+                if (!possible_struct) {
+                    error_msg(expr->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+                    exit(1);
+                }
+                Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
+                if (!possible_var) {
+                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
+                    exit(1);
+                }
+                type = possible_var->type;
+
+                root = root->child;
+            }
+
             res->type = type;
             res->kind = CHECKED_EXPR_IDENTIFIER;
             res->as.identifier = expr->as.identifier;
@@ -387,14 +408,18 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->kind = CHECKED_EXPR_CAST;
             res->as.cast = cast;
         } break;
-        /*case EXPR_STRUCT_CONSTRUCT: {
-            //TODO: check if construction is like Person{name = "sussy", age = 69};
-            Struct_Decl *sd = struct_exist(wanted_type.str);
+        case EXPR_STRUCT_CONSTRUCT: {
+            Checked_Struct_Decl *sd = struct_exist(wanted_type.str);
             Struct_Construct *sc = expr->as.struct_construct;
+            Checked_Struct_Construct *csc = calloc(1, sizeof(Checked_Struct_Construct));
 
             if (!sd) {
                 if ((wanted_type.flags & TYPE_NEEDS_INFERRING) != 0) {
-                    return wanted_type;
+                    res->type = wanted_type;
+                    res->kind = CHECKED_EXPR_STRUCT_CONSTRUCT;
+                    res->as.struct_construct = csc;
+                    assert(0 && "hm");
+                    return res;
                 } else {
                     error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type.str);
                     exit(1);
@@ -417,12 +442,11 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             }
 
             struct {
-                Struct_Construct_Arg *data;
+                Checked_Struct_Construct_Arg *data;
                 int len;
             } default_args = {0};
 
             for (int i = 0; i < sd->vars.len; i++) {
-                //if (sd->vars.data[i]->value) continue;
                 bool found = false;
                 for (int j = 0; j < sc->args.len; j++) {
                     if (strcmp(sd->vars.data[i]->name.value, sc->args.data[j].name.value) == 0) {
@@ -431,7 +455,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 }
                 if (!found) {
                     if (sd->vars.data[i]->value) {
-                        Struct_Construct_Arg default_arg = {0};
+                        Checked_Struct_Construct_Arg default_arg = {0};
                         default_arg.name = sd->vars.data[i]->name;
                         default_arg.expr = sd->vars.data[i]->value;
                         array_push(default_args, default_arg);
@@ -443,21 +467,25 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 }
             }
 
-            array_append(sc->args, default_args.data, default_args.len);
+            array_append(csc->args, default_args.data, default_args.len);
 
             for (int i = 0; i < sc->args.len; i++) {
                 bool found = false;
                 for (int j = 0; j < sd->vars.len; j++) {
                     if (strcmp(sd->vars.data[j]->name.value, sc->args.data[i].name.value) == 0) {
-                        Type expected_type = type_exist(sd->vars.data[j]->type);
-                        Type given_type = check_expr(vars, sc->args.data[i].expr, expected_type);
-                        if (strcmp(expected_type.str, given_type.str) != 0) {
+                        Type expected_type = sd->vars.data[j]->type;
+                        Checked_Expr *given_expr = check_expr(sc->args.data[i].expr, vars, fn, deep, expected_type);
+                        if (!type_eq(expected_type, given_expr->type)) {
                             error_msg(expr->loc, ERROR_FATAL, "fields of `%s` struct are incorrect", sd->name.value);
-                            error_msg(sc->args.data[i].name.loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_type.str);
+                            error_msg(sc->args.data[i].name.loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_expr->type.str);
                             error_msg(sd->name.loc, ERROR_NOTE, "`%s` defined here", sd->name.value);
                             exit(1);
                         }
                         found = true;
+                        Checked_Struct_Construct_Arg arg = {0};
+                        arg.name = sd->vars.data[j]->name;
+                        arg.expr = given_expr;
+                        array_push(csc->args, arg);
                     }
                 }
                 if (!found) {
@@ -467,9 +495,11 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 }
             }
 
-            sc->type = wanted_type.str;
-            return wanted_type;
-        } break;*/
+            csc->type = wanted_type;
+            res->type = wanted_type;
+            res->kind = CHECKED_EXPR_STRUCT_CONSTRUCT;
+            res->as.struct_construct = csc;
+        } break;
         default: {
             assert(0 && "unreacheable");
         } break;
@@ -485,6 +515,15 @@ Checked_Var var_exist(Var_Array vars, char *name) {
         }
     }
     return (Checked_Var){0};
+}
+
+Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name) {
+    for (int i = 0; i < sd->vars.len; i++) {
+        if (strcmp(sd->vars.data[i]->name.value, name) == 0) {
+            return sd->vars.data[i];
+        }
+    }
+    return NULL;
 }
 
 Type type_exist(char *str) {

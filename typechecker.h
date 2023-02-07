@@ -63,6 +63,7 @@ typedef struct Checked_Struct_Construct {
         Checked_Struct_Construct_Arg *data;
         int len;
     } args;
+    Type type;
 } Checked_Struct_Construct;
 
 typedef struct Checked_Func_Call {
@@ -99,6 +100,7 @@ typedef struct Checked_Return_Stmt {
 typedef struct Checked_Var_Decl {
     Token name;
     Checked_Expr *value;
+    Type type;
     bool zero_init;
 } Checked_Var_Decl;
 
@@ -209,6 +211,7 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
 Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_Expr *check_expr(Expr *expr, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep, Type wanted_type);
 Checked_Var var_exist(Var_Array vars, char *name);
+Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name);
 Type type_exist(char *str);
 Checked_Var check_var(Var var);
 bool type_eq(Type a, Type b);
