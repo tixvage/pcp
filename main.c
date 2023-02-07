@@ -24,6 +24,6 @@ int main(int argc, char **argv) {
     init_parser(&parser, lexer);
 
     parser_parse(&parser);
-    typechecker_check(&parser.res);
-    cgen_generate(&parser.res, "tests/out.c");
+    Checked_File cf =  typechecker_check(&parser.res);
+    cgen_generate(&cf, "tests/out.c");
 }

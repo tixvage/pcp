@@ -8,7 +8,7 @@
 
 #include "error.h"
 
-Checker_Info info = {0};
+Checked_File info = {0};
 
 const Type builtin_types[] = {
     {"void", TYPE_VOID},
@@ -23,71 +23,12 @@ const Type builtin_types[] = {
     {"cstr", TYPE_STRING},
     {"bool", TYPE_BOOLEAN},
     {"auto", TYPE_NEEDS_INFERRING},
+    {"va_arg", TYPE_NEEDS_INFERRING},
 };
-
-void check_struct_decls(Parsed_File *decls) {
-    for (int i = 0; i < decls->struct_decls.len; i++) {
-        Struct_Decl *possible_decl = struct_exist(decls->struct_decls.data[i]->name.value);
-        if (possible_decl) {
-            error_msg(decls->struct_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` already defined", possible_decl->name.value);
-            error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
-            exit(1);
-        }
-        array_push(info.structs, decls->struct_decls.data[i]);
-        Type type = {decls->struct_decls.data[i]->name.value, TYPE_STRUCT};
-        array_push(info.types, type);
-    }
-}
-
-void check_struct_vars(void) {
-    for (int i = 0; i < info.structs.len; i++) {
-        check_struct(info.structs.data[i]);
-    }
-}
-
-void check_struct(Struct_Decl *sd) {
-    Var_Array vars = {0};
-    for (int i = 0; i < sd->vars.len; i++) {
-        Type possible_type = type_exist(sd->vars.data[i]->type);
-        if (!possible_type.str) {
-            error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "field `%s` of struct `%s` has undeclared type `%s`", sd->vars.data[i]->name.value, sd->name.value, sd->vars.data[i]->type);
-            exit(1);
-        }
-        Checked_Var possible_var = var_exist(vars, sd->vars.data[i]->name.value);
-        if (possible_var.type.str) {
-            error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "field `%s` already exists in struct `%s`", possible_var.name.value, sd->vars.data[i]->type);
-            error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
-            exit(1);
-        }
-        if (!sd->vars.data[i]->zero_init) {
-            Type possible_var_type = type_exist(sd->vars.data[i]->type);
-            if (!possible_var_type.str) {
-                error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "variable `%s` has invalid type", sd->vars.data[i]->name.value);
-                exit(1);
-            }
-            Type type = check_expr(vars, sd->vars.data[i]->value, possible_var_type);
-            if (strcmp(sd->vars.data[i]->type, "auto") == 0) {
-                if (strcmp(type.str, "auto") == 0) {
-                    error_msg(sd->vars.data[i]->name.loc, ERROR_FATAL, "type of `%s` could not be inferred", sd->vars.data[i]->name.value);
-                    exit(1);
-                }
-                sd->vars.data[i]->type = type.str;
-            }
-            if (strcmp(sd->vars.data[i]->type, "auto") != 0 && strcmp(type.str, sd->vars.data[i]->type) != 0) {
-                error_msg(sd->vars.data[i]->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", sd->vars.data[i]->type, type.str);
-                exit(1);
-            }
-        }
-
-        Checked_Var var = {sd->vars.data[i]->name, possible_type};
-        
-        array_push(vars, var);
-    }
-}
 
 void check_function_decls(Parsed_File *decls) {
     for (int i = 0; i < decls->fn_decls.len; i++) {
-        Fn_Decl *possible_decl = function_exist(decls->fn_decls.data[i]->name.value);
+        Checked_Fn_Decl *possible_decl = function_exist(decls->fn_decls.data[i]->name.value);
         if (possible_decl) {
             error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` already defined", possible_decl->name.value);
             error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
@@ -98,17 +39,30 @@ void check_function_decls(Parsed_File *decls) {
             error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` has invalid return type", decls->fn_decls.data[i]->name.value);
             exit(1);
         }
-        array_push(info.funcs, decls->fn_decls.data[i]);
+        possible_decl = malloc(sizeof(Checked_Fn_Decl));
+        possible_decl->name = decls->fn_decls.data[i]->name;
+        possible_decl->return_type = possible_type;
+        possible_decl->eextern = decls->fn_decls.data[i]->eextern;
+        possible_decl->has_va_arg = decls->fn_decls.data[i]->has_va_arg;
+        possible_decl->body.data = NULL;
+        possible_decl->body.len = 0;
+        possible_decl->args.data = NULL;
+        possible_decl->args.len = 0;
+
+        Var_Array vars = {0};
+        for (int j = 0; j < decls->fn_decls.data[i]->args.len; j++) {
+            Var var = decls->fn_decls.data[i]->args.data[j];
+            array_push(vars, check_var(var));
+        }
+        if (!possible_decl->eextern) {
+            possible_decl->body = check_scope(vars, decls->fn_decls.data[i]->body, possible_decl, 0);
+        }
+        possible_decl->args = vars;
+        array_push(info.funcs, possible_decl);
     }
 }
 
-void check_function_statements(void) {
-    for (int i = 0; i < info.funcs.len; i++) {
-        if (!info.funcs.data[i]->eextern) check_function(info.funcs.data[i]);
-    }
-}
-
-Fn_Decl *function_exist(char *name) {
+Checked_Fn_Decl *function_exist(char *name) {
     for (int i = 0; i < info.funcs.len; i++) {
         if (strcmp(info.funcs.data[i]->name.value, name) == 0) {
             return info.funcs.data[i];
@@ -126,122 +80,48 @@ Struct_Decl *struct_exist(char *name) {
     return NULL;
 }
 
-void check_function(Fn_Decl *fn) {
-    Var_Array vars = {0};
-    for (int i = 0; i < fn->args.len; i++) {
-        array_push(vars, check_var(fn->args.data[i]));
-    }
-
-    check_scope(vars, fn->body, fn, 0);
-}
-
-void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
+Checked_Scope check_scope(Var_Array vars_copy, Scope scope, Checked_Fn_Decl *fn, int deep) {
+    Checked_Scope res = {0};
     Var_Array vars = {0};
     array_copy(vars, vars_copy);
 
     bool return_found = false;
 
     for (int i = 0; i < scope.len; i++) {
+        Checked_Stmt checked_stmt = {0};
         Stmt stmt = scope.data[i];
         switch (stmt.kind) {
             case STMT_IF_STMT: {
-                Type type = check_expr(vars, stmt.as.if_stmt->expr, type_exist("bool"));
-                if (strcmp(type.str, "bool") != 0) {
-                    error_msg(stmt.as.if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `%s`", type.str);
-                    exit(1);
-                }
-                check_scope(vars, stmt.as.if_stmt->body, fn, deep + 1);
+                Checked_If_Stmt *if_stmt = check_if_stmt(stmt.as.if_stmt, vars, fn, deep + 1);
+                checked_stmt.kind = CHECKED_STMT_IF_STMT;
+                checked_stmt.as.if_stmt = if_stmt;
             } break;
             case STMT_FOR_STMT: {
-                Checked_Var possible_var = var_exist(vars, stmt.as.for_stmt->var.name.value);
-                if (possible_var.type.str) {
-                    error_msg(stmt.as.for_stmt->var.name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
-                    error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
-                    exit(1);
-                }
-                Type lhs = check_expr(vars, stmt.as.for_stmt->range.start, type_exist("i32"));
-                Type rhs = check_expr(vars, stmt.as.for_stmt->range.end, type_exist("i32"));
-
-                if ((lhs.flags & TYPE_NUMBER) == 0 || (rhs.flags & TYPE_NUMBER) == 0) {
-                    error_msg(stmt.as.for_stmt->range.start->loc, ERROR_FATAL, "range type must be `i32`");
-                    exit(1);
-                }
-
-                Var_Array for_vars = {0};
-                array_copy(for_vars, vars);
-                array_push(for_vars, check_var(stmt.as.for_stmt->var));
-                check_scope(for_vars, stmt.as.for_stmt->body, fn, deep + 1);
+                Checked_For_Stmt *for_stmt = check_for_stmt(stmt.as.for_stmt, vars, fn, deep + 1);
+                checked_stmt.kind = CHECKED_STMT_FOR_STMT;
+                checked_stmt.as.for_stmt = for_stmt;
             } break;
             case STMT_RETURN_STMT: {
-                Type type = check_expr(vars, stmt.as.return_stmt->expr, type_exist(fn->return_type));
-                if (type.str == NULL || strcmp(type.str, fn->return_type) != 0) {
-                    error_msg(stmt.as.return_stmt->expr->loc, ERROR_FATAL, "expected type `%s` for the return type of `%s` function but got `%s`", fn->return_type, fn->name.value, type.str);
-                    error_msg(fn->name.loc, ERROR_NOTE, "`%s` defined here", fn->name.value);
-                    exit(1);
-                }
+                Checked_Return_Stmt *return_stmt = check_return_stmt(stmt.as.return_stmt, vars, fn, deep);
+                checked_stmt.kind = CHECKED_STMT_RETURN_STMT;
+                checked_stmt.as.return_stmt = return_stmt;
+
                 return_found = true;
             } break;
             case STMT_VAR_DECL: {
-                Checked_Var possible_var = var_exist(vars, stmt.as.var_decl->name.value);
-                if (possible_var.type.str) {
-                    error_msg(stmt.as.var_decl->name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
-                    error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
-                    exit(1);
-                }
-
-                if (!stmt.as.var_decl->zero_init) {
-                    Type possible_var_type = type_exist(stmt.as.var_decl->type);
-                    if (!possible_var_type.str) {
-                        error_msg(stmt.as.var_decl->name.loc, ERROR_FATAL, "variable `%s` has invalid type", stmt.as.var_decl->name.value);
-                        exit(1);
-                    }
-                    Type type = check_expr(vars, stmt.as.var_decl->value, possible_var_type);
-                    if (strcmp(stmt.as.var_decl->type, "auto") == 0) {
-                        if (strcmp(type.str, "auto") == 0) {
-                            error_msg(stmt.as.var_decl->name.loc, ERROR_FATAL, "type of `%s` could not be inferred", stmt.as.var_decl->name.value);
-                            exit(1);
-                        }
-                        stmt.as.var_decl->type = type.str;
-                    }
-                    if (strcmp(stmt.as.var_decl->type, "auto") != 0 && strcmp(type.str, stmt.as.var_decl->type) != 0) {
-                        error_msg(stmt.as.var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", stmt.as.var_decl->type, type.str);
-                        exit(1);
-                    }
-                }
-                Var var = (Var){stmt.as.var_decl->type, stmt.as.var_decl->name};
-                array_push(vars, check_var(var));
+                Checked_Var_Decl *var_decl = check_var_decl(stmt.as.var_decl, &vars, fn, deep);
+                checked_stmt.kind = CHECKED_STMT_VAR_DECL;
+                checked_stmt.as.var_decl = var_decl;
             } break;
             case STMT_VAR_ASSIGN: {
-                Checked_Var possible_var = var_exist(vars, stmt.as.var_assign->var->name);
-                Type type = possible_var.type;
-                if (!possible_var.type.str) {
-                    error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "variable `%s` is undeclared", stmt.as.var_assign->var->name);
-                    exit(1);
-                }
-                Identifier *root = stmt.as.var_assign->var;
-                while (root->child) {
-                    Struct_Decl *possible_struct = struct_exist(type.str);
-                    if (!possible_struct) {
-                        error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
-                        exit(1);
-                    }
-                    Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
-                    if (!possible_var) {
-                        error_msg(stmt.as.var_assign->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
-                        exit(1);
-                    }
-                    type = type_exist(possible_var->type);
-
-                    root = root->child;
-                }
-                Type given_type = check_expr(vars, stmt.as.var_assign->expr, type);
-                if (strcmp(type.str, given_type.str) != 0) {
-                    error_msg(stmt.as.var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", type.str, given_type.str);
-                    exit(1);
-                }
+                Checked_Var_Assign *var_assign = check_var_assign(stmt.as.var_assign, vars, fn, deep);
+                checked_stmt.kind = CHECKED_STMT_VAR_ASSIGN;
+                checked_stmt.as.var_assign = var_assign;
             } break;
             case STMT_EXPR: {
-                check_expr(vars, stmt.as.expr, type_exist("auto"));
+                Checked_Expr *expr = check_expr(stmt.as.expr, vars, fn, deep, type_exist("auto"));
+                checked_stmt.kind = CHECKED_STMT_EXPR;
+                checked_stmt.as.expr = expr;
             } break;
             case STMT_EMPTY:  {
             } break;
@@ -249,42 +129,149 @@ void check_scope(Var_Array vars_copy, Scope scope, Fn_Decl *fn, int deep) {
                 assert(0 && "unreacheable");
             } break;
         }
+        array_push(res, checked_stmt);
     }
 
-    if (deep == 0 && !return_found && strcmp(fn->return_type, "void") != 0) {
+    if (deep == 0 && !return_found && strcmp(fn->return_type.str, "void") != 0) {
         error_msg(fn->name.loc, ERROR_FATAL, "`%s` reaches end of non-void function", fn->name.value);
         exit(1);
     }
+
+    return res;
 }
 
-Checked_Var var_exist(Var_Array vars, char *name) {
-    for (int i = 0; i < vars.len; i++) {
-        if (strcmp(vars.data[i].name.value, name) == 0) {
-            return vars.data[i];
+Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
+    Checked_If_Stmt *res = calloc(1, sizeof(Checked_If_Stmt));
+
+    res->expr = check_expr(if_stmt->expr, vars_copy, fn, deep, type_exist("bool"));
+    if ((res->expr->type.flags & TYPE_BOOLEAN) == 0) {
+        error_msg(if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `%s`", res->expr->type.str);
+        exit(1);
+    }
+
+    res->body = check_scope(vars_copy, if_stmt->body, fn, deep);
+
+    return res;
+}
+
+Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
+    Checked_For_Stmt *res = calloc(1, sizeof(Checked_For_Stmt));
+
+    Checked_Var possible_var = var_exist(vars_copy, for_stmt->var.name.value);
+    if (possible_var.type.str) {
+        error_msg(for_stmt->var.name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
+        error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
+        exit(1);
+    }
+    res->var = possible_var;
+
+    res->range.start = check_expr(for_stmt->range.start, vars_copy, fn, deep, type_exist("i32"));
+    res->range.end = check_expr(for_stmt->range.end, vars_copy, fn, deep, type_exist("i32"));
+    Type lhs = res->range.start->type;
+    Type rhs = res->range.end->type;
+    if ((lhs.flags & TYPE_NUMBER) == 0 || (rhs.flags & TYPE_NUMBER) == 0) {
+        error_msg(for_stmt->range.start->loc, ERROR_FATAL, "range type must be `i32`");
+        exit(1);
+    }
+
+    Var_Array for_vars = {0};
+    array_copy(for_vars, vars_copy);
+    array_push(for_vars, possible_var);
+    res->body = check_scope(for_vars, for_stmt->body, fn, deep);
+
+    return res;
+}
+
+Checked_Return_Stmt *check_return_stmt(Return_Stmt *return_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
+    Checked_Return_Stmt *res = calloc(1, sizeof(Checked_Return_Stmt));
+
+    res->expr = check_expr(return_stmt->expr, vars_copy, fn, deep, fn->return_type);
+    if (!type_eq(res->expr->type, fn->return_type)) {
+        error_msg(return_stmt->expr->loc, ERROR_FATAL, "expected type `%s` for the return type of `%s` function but got `%s`", fn->return_type.str, fn->name.value, res->expr->type.str);
+        error_msg(fn->name.loc, ERROR_NOTE, "`%s` defined here", fn->name.value);
+        exit(1);
+    }
+
+    return res;
+}
+
+Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn_Decl *fn, int deep) {
+    Checked_Var_Decl *res = calloc(1, sizeof(Checked_Var_Decl));
+
+    Checked_Var possible_var = var_exist(*vars, var_decl->name.value);
+    if (possible_var.type.str) {
+        error_msg(var_decl->name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
+        error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
+        exit(1);
+    }
+    res->name = var_decl->name;
+
+    Type possible_var_type = type_exist(var_decl->type);
+    if (!possible_var_type.str) {
+        error_msg(var_decl->name.loc, ERROR_FATAL, "variable `%s` has invalid type", var_decl->name.value);
+        exit(1);
+    }
+    if (var_decl->zero_init) {
+        res->value = NULL;
+        res->zero_init = true;
+    } else {
+        res->value = check_expr(var_decl->value, *vars, fn, deep, possible_var_type);
+        if (type_eq(possible_var_type, type_exist("auto"))) {
+            if (type_eq(res->value->type, type_exist("auto"))) {
+                error_msg(var_decl->name.loc, ERROR_FATAL, "type of `%s` could not be inferred", var_decl->name.value);
+                exit(1);
+            }
+            possible_var_type = res->value->type;
+        }
+        if (!type_eq(possible_var_type, res->value->type)) {
+            error_msg(var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", var_decl->type, res->value->type.str);
+            exit(1);
         }
     }
-    return (Checked_Var){0};
+
+    Checked_Var var = {var_decl->name, res->value->type};
+    array_push(*vars, var);
+
+    return res;
 }
 
-Var_Decl *struct_var_exist(Struct_Decl *sd, char *name) {
-    for (int i = 0; i < sd->vars.len; i++) {
-        if (strcmp(sd->vars.data[i]->name.value, name) == 0) {
-            return sd->vars.data[i];
-        }
+Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
+    Checked_Var_Assign *res = calloc(1, sizeof(Checked_Var_Assign));
+
+    Checked_Var possible_var = var_exist(vars_copy, var_assign->var->name);
+    if (!possible_var.type.str) {
+        error_msg(var_assign->loc, ERROR_FATAL, "variable `%s` is undeclared", var_assign->var->name);
+        exit(1);
     }
-    return NULL;
+
+    res->var = var_assign->var;
+    Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, possible_var.type);
+    if (!type_eq(expr->type, possible_var.type)) {
+        error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var.type.str, expr->type.str);
+        exit(1);
+    }
+    res->expr = expr;
+
+    return res;
 }
 
-Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
+Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int deep, Type wanted_type) {
+    Checked_Expr *res = calloc(1, sizeof(Checked_Expr));
+
     switch (expr->kind) {
         case EXPR_NUMBER: {
-            /*if ((wanted_type.flags & TYPE_NUMBER) != 0) {
-                return wanted_type;
-            }*/
-            return type_exist("i32");
+            Type type = type_exist("i32");
+            if ((wanted_type.flags & TYPE_NUMBER) != 0) {
+                type = wanted_type;
+            }
+            res->type = type;
+            res->kind = CHECKED_EXPR_NUMBER;
+            res->as.number = expr->as.number;
         } break;
         case EXPR_STRING: {
-            return type_exist("cstr");
+            res->type = type_exist("cstr");
+            res->kind = CHECKED_EXPR_STRING;
+            res->as.string = expr->as.string;
         } break;
         case EXPR_IDENTIFIER: {
             Type type = var_exist(vars, expr->as.identifier->name).type;
@@ -292,66 +279,77 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
                 error_msg(expr->loc, ERROR_FATAL, "variable `%s` could not found in scope", expr->as.identifier->name);
                 exit(1);
             }
-            Identifier *root = expr->as.identifier;
-            while (root->child) {
-                Struct_Decl *possible_struct = struct_exist(type.str);
-                if (!possible_struct) {
-                    error_msg(expr->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
-                    exit(1);
-                }
-                Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
-                if (!possible_var) {
-                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
-                    exit(1);
-                }
-                type = type_exist(possible_var->type);
-
-                root = root->child;
-            }
-            return type;
+            res->type = type;
+            res->kind = CHECKED_EXPR_IDENTIFIER;
+            res->as.identifier = expr->as.identifier;
         } break;
         case EXPR_BIN_OP: {
-            Type lhs = check_expr(vars, expr->as.bin_op->left, wanted_type);
-            Type rhs = check_expr(vars, expr->as.bin_op->right, wanted_type);
+            Checked_Expr *left = check_expr(expr->as.bin_op->left, vars, fn, deep, wanted_type);
+            Checked_Expr *right = check_expr(expr->as.bin_op->right, vars, fn, deep, wanted_type);
+            Type type = left->type;
 
-            if (strcmp(lhs.str, rhs.str) != 0) {
-                error_msg(expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", lhs.str, rhs.str);
+            if (!type_eq(left->type, right->type)) {
+                error_msg(expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", left->type.str, right->type.str);
                 exit(1);
             }
             if (expr->as.bin_op->op.type == TOKEN_EQUAL_EQUAL) {
-                return type_exist("bool");
+                type = type_exist("bool");
             }
-            return lhs;
+            res->type = type;
+            res->kind = CHECKED_EXPR_BIN_OP;
+            Checked_Bin_Op *bin_op = malloc(sizeof(Checked_Bin_Op));
+            bin_op->left = left;
+            bin_op->right = right;
+            bin_op->op = expr->as.bin_op->op;
+            res->as.bin_op = bin_op;
         } break;
         case EXPR_UN_OP: {
-            return check_expr(vars, expr->as.un_op->expr, wanted_type);
+            Checked_Expr *un_op_expr = check_expr(expr->as.un_op->expr, vars, fn, deep, wanted_type);
+            res->type = un_op_expr->type;
+            res->kind = CHECKED_EXPR_UN_OP;
+            Checked_Un_Op *un_op = malloc(sizeof(Checked_Un_Op));
+            un_op->expr = un_op_expr;
+            un_op->op = expr->as.un_op->op;
+            res->as.un_op = un_op;
         } break;
         case EXPR_FUNC_CALL: {
-            Fn_Decl *possible_fn = function_exist(expr->as.func_call->name);
+            Checked_Fn_Decl *possible_fn = function_exist(expr->as.func_call->name);
+
+            Checked_Func_Call *func_call = calloc(1, sizeof(Checked_Func_Call));
+            func_call->name = expr->as.func_call->name;
+
             if (!possible_fn) {
                 error_msg(expr->loc, ERROR_FATAL, "function `%s` could not found", expr->as.func_call->name);
                 exit(1);
             }
-            if (possible_fn->has_va_arg) return type_exist(possible_fn->return_type);
-            if (possible_fn->args.len != expr->as.func_call->args.len) {
-                error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
-                error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
-                exit(1);
-            }
-            for (int i = 0; i < possible_fn->args.len; i++) {
-                Type expected_type = check_var(possible_fn->args.data[i]).type;
-                Type given_type = check_expr(vars, expr->as.func_call->args.data[i], expected_type);
-                if (strcmp(expected_type.str, given_type.str) != 0) {
-                    error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
-                    error_msg(expr->as.func_call->args.data[i]->loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_type.str);
+            if (possible_fn->has_va_arg) {
+                for (int i = 0; i < expr->as.func_call->args.len; i++) {
+                    Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i], vars, fn, deep, type_exist("auto"));
+                    array_push(func_call->args, given_expr);
+                }
+            } else {
+                if (possible_fn->args.len != expr->as.func_call->args.len) {
+                    error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
                     error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
                     exit(1);
                 }
+                for (int i = 0; i < possible_fn->args.len; i++) {
+                    Type expected_type = possible_fn->args.data[i].type;
+                    Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i], vars, fn, deep, expected_type);
+                    if (!type_eq(expected_type, given_expr->type)) {
+                        error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
+                        error_msg(expr->as.func_call->args.data[i]->loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_expr->type.str);
+                        error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
+                        exit(1);
+                    }
+                    array_push(func_call->args, given_expr);
+                }
             }
-            return type_exist(possible_fn->return_type);
+            res->type = possible_fn->return_type;
+            res->kind = CHECKED_EXPR_FUNC_CALL;
+            res->as.func_call = func_call;
         } break;
         case EXPR_CAST: {
-            //TODO: check if cast is possible
             Type type = type_exist(expr->as.cast->type.value);
             if (!type.str) {
                 error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type.value);
@@ -361,10 +359,15 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
             if (expr->as.cast->expr->kind == EXPR_STRUCT_CONSTRUCT) {
                 convert = type;
             }
-            check_expr(vars, expr->as.cast->expr, convert);
-            return type_exist(expr->as.cast->type.value);
+            Checked_Expr *cast_expr = check_expr(expr->as.cast->expr, vars, fn, deep, convert);
+            Checked_Cast *cast = malloc(sizeof(Checked_Cast));
+            cast->expr = cast_expr;
+            cast->type = type;
+            res->type = type;
+            res->kind = CHECKED_EXPR_CAST;
+            res->as.cast = cast;
         } break;
-        case EXPR_STRUCT_CONSTRUCT: {
+        /*case EXPR_STRUCT_CONSTRUCT: {
             //TODO: check if construction is like Person{name = "sussy", age = 69};
             Struct_Decl *sd = struct_exist(wanted_type.str);
             Struct_Construct *sc = expr->as.struct_construct;
@@ -446,12 +449,22 @@ Type check_expr(Var_Array vars, Expr *expr, Type wanted_type) {
 
             sc->type = wanted_type.str;
             return wanted_type;
-        } break;
+        } break;*/
         default: {
             assert(0 && "unreacheable");
         } break;
     }
-    assert(0 && "unreacheable");
+
+    return res;
+}
+
+Checked_Var var_exist(Var_Array vars, char *name) {
+    for (int i = 0; i < vars.len; i++) {
+        if (strcmp(vars.data[i].name.value, name) == 0) {
+            return vars.data[i];
+        }
+    }
+    return (Checked_Var){0};
 }
 
 Type type_exist(char *str) {
@@ -476,11 +489,13 @@ Checked_Var check_var(Var var) {
     return res;
 }
 
-void typechecker_check(Parsed_File *decls) {
+bool type_eq(Type a, Type b) {
+    return (strcmp(a.str, b.str) == 0) && a.flags == b.flags;
+}
+
+Checked_File typechecker_check(Parsed_File *decls) {
     array_append(info.types, builtin_types, sizeof(builtin_types)/sizeof(builtin_types[0]));
-    check_struct_decls(decls);
-    check_struct_vars();
     check_function_decls(decls);
-    check_function_statements();
-    (void) decls;
+
+    return info;
 }

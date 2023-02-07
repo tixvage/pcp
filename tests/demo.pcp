@@ -4,35 +4,28 @@ fn print_number_and_string(d: i32, s: cstr): void {
     printf("%d %s\n", d, s);
 }
 
-fn print_person(p: Person): void {
-    print_number_and_string(p.age, p.name);
-}
-
-struct Person {
-    age := 20;
-    name: cstr;
-}
-
-struct Dumb {
-    a := "baka";
-    b := 20;
-    c: Person = {
-        name = "sussy",
-    } as Person;
-}
+// fn print_person(p: Person): void {
+//     print_number_and_string(p.age, p.name);
+// }
+// 
+// struct Person {
+//     age := 20;
+//     name: cstr;
+// }
+// 
+// struct Dumb {
+//     a := "baka";
+//     b := 20;
+//     c: Person = {
+//         name = "sussy",
+//     } as Person;
+// }
 
 fn main(): i32 {
-    p := {name = "hello"} as Person;
-    print_person(p);
-    p = {age = 30, name = "yo"};
-    print_person(p);
-    a := { age = 35, name = "sussy" } as Person;
-    p = a;
-    print_person(p);
-    dumber : Dumb = {
-        a = "hello",
-    };
-    p = dumber.c;
-    print_person(p);
+    s := "mad";
+    a := 20 as i64;
+    printf("%s %s\n", s, "yo");
+    s = "haha";
+    print_number_and_string(a as i32, s);
     return 0;
 }
