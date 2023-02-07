@@ -184,7 +184,7 @@ typedef struct Checked_File {
         int len;
     } funcs;
     struct {
-        Struct_Decl **data;
+        Checked_Struct_Decl **data;
         int len;
     } structs;
     struct {
@@ -195,12 +195,10 @@ typedef struct Checked_File {
 
 Checked_File typechecker_check(Parsed_File *decls);
 
-void check_struct_decls(Parsed_File *decls);
-void check_struct_vars(void);
-void check_function_decls(Parsed_File *decls);
-void check_function_statements(void);
+void check_structs(Parsed_File *decls);
+void check_functions(Parsed_File *decls);
 Checked_Fn_Decl *function_exist(char *name);
-Struct_Decl *struct_exist(char *name);
+Checked_Struct_Decl *struct_exist(char *name);
 void check_function(Fn_Decl *fn);
 void check_struct(Struct_Decl *sd);
 Checked_Scope check_scope(Var_Array vars_copy, Scope scope, Checked_Fn_Decl *fn, int deep);

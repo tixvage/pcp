@@ -26,7 +26,27 @@ const Type builtin_types[] = {
     {"va_arg", TYPE_NEEDS_INFERRING},
 };
 
-void check_function_decls(Parsed_File *decls) {
+void check_structs(Parsed_File *decls) {
+    for (int i = 0; i < decls->struct_decls.len; i++) {
+        Struct_Decl *decl = decls->struct_decls.data[i];
+        Checked_Struct_Decl *possible_decl = struct_exist(decl->name.value);
+        if (possible_decl) {
+            error_msg(decl->name.loc, ERROR_FATAL, "struct `%s` already defined", possible_decl->name.value);
+            error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
+            exit(1);
+        }
+        possible_decl = calloc(1, sizeof(Checked_Fn_Decl));
+        Var_Array vars = {0};
+        for (int j = 0; j < decl->vars.len; j++) {
+            Checked_Var_Decl *var_decl = check_var_decl(decl->vars.data[i], &vars, NULL, 0);
+            array_push(possible_decl->vars, var_decl);
+        }
+        Type type = {decl->name.value, TYPE_STRUCT};
+        array_push(info.types, type);
+    }
+}
+
+void check_functions(Parsed_File *decls) {
     for (int i = 0; i < decls->fn_decls.len; i++) {
         Checked_Fn_Decl *possible_decl = function_exist(decls->fn_decls.data[i]->name.value);
         if (possible_decl) {
@@ -71,7 +91,7 @@ Checked_Fn_Decl *function_exist(char *name) {
     return NULL;
 }
 
-Struct_Decl *struct_exist(char *name) {
+Checked_Struct_Decl *struct_exist(char *name) {
     for (int i = 0; i < info.structs.len; i++) {
         if (strcmp(info.structs.data[i]->name.value, name) == 0) {
             return info.structs.data[i];
@@ -495,7 +515,7 @@ bool type_eq(Type a, Type b) {
 
 Checked_File typechecker_check(Parsed_File *decls) {
     array_append(info.types, builtin_types, sizeof(builtin_types)/sizeof(builtin_types[0]));
-    check_function_decls(decls);
-
+    check_structs(decls);
+    check_functions(decls);
     return info;
 }
