@@ -1,48 +1,17 @@
 extern fn printf(fmt: cstr, ...): i32;
+extern fn exit(code: i32): void;
+extern fn SDL_Init(flags: u32): i32;
 
-fn print_number_and_string(d: i32, s: cstr): void {
-    printf("%d %s\n", d, s);
-}
+const SDL_INIT_EVERYTHING := 65535 as u32;
 
-fn print_person(p: Person): void {
-    print_number_and_string(p.age, p.name);
-}
-
-struct Person {
-    age := 20;
-    name: cstr;
-}
-
-struct Dumb {
-    a := "baka";
-    b := 20;
-    c := {
-        name = "sussy",
-    } as Person;
+fn debug_log(str: cstr): void {
+    printf("%s\n", str);
 }
 
 fn main(): i32 {
-    p := {name = "hello"} as Person;
-    print_person(p);
-    p = {age = 30, name = "yo"};
-    print_person(p);
-    a := { age = 35, name = "sussy" } as Person;
-    p = a;
-    print_person(p);
-    dumber : Dumb = {
-        a = "hello",
-        c = {
-            name = "hello",
-            age = 30,
-        },
-    };
-    dumber.c = { name = "sussy" };
-    p = dumber.c;
-    print_person(p);
-    if dumber.b == 21 - 1 {
-        for i in 0..5 {
-            print_person({name = "sussy baka"});
-        }
+    if SDL_Init(SDL_INIT_EVERYTHING) != 0 {
+        debug_log("failed to init sdl");
+        exit(1);
     }
     return 0;
 }

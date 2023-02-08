@@ -14,6 +14,7 @@ void cgen_structs(Checked_File *decls);
 void cgen_struct(Checked_Struct_Decl *sc);
 void cgen_functions(Checked_File *decls);
 void cgen_function(Checked_Fn_Decl *fn);
+void cgen_top_assignments(Checked_File *decls);
 void cgen_statement(Checked_Stmt stmt);
 void cgen_if_statment(Checked_If_Stmt *if_stmt);
 void cgen_for_statment(Checked_For_Stmt *for_stmt);
@@ -85,6 +86,12 @@ void cgen_function(Checked_Fn_Decl *fn) {
         cgen_statement(fn->body.data[i]);
     }
     fprintf(f, "}\n");
+}
+
+void cgen_top_assignments(Checked_File *decls) {
+    for (int i = 0; i < decls->top_assignments.len; i++) {
+        cgen_var_declaration(decls->top_assignments.data[i]);
+    }
 }
 
 void cgen_statement(Checked_Stmt stmt) {
@@ -235,6 +242,7 @@ void cgen_generate(Checked_File *decls, const char *path) {
     }
     cgen_prepare();
     cgen_structs(decls);
+    cgen_top_assignments(decls);
     cgen_functions(decls);
     fclose(f);
 }

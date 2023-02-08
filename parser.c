@@ -53,7 +53,8 @@ void parse_file(Parser *parser);
 Stmt parse_top_stmt(Parser *parser) {
     Token tk = parser->current_token;
     switch (tk.type) {
-        case TOKEN_KEYWORD_VAR: {
+        case TOKEN_KEYWORD_CONST: {
+            parser_eat(parser);
             return (Stmt){
                 .kind = STMT_VAR_DECL,
                 .as = {.var_decl = parse_var_decl(parser)},
@@ -290,7 +291,7 @@ Expr *parse_primary_expr(Parser *parser) {
 Expr *parse_comparative_expr(Parser *parser) {
     Expr *root = parse_additive_expr(parser);
     //if?
-    while (parser->current_token.type == TOKEN_EQUAL_EQUAL) {
+    while (parser->current_token.type == TOKEN_EQUAL_EQUAL || parser->current_token.type == TOKEN_BANG_EQUAL) {
         Token op = parser_eat(parser);
         Expr *right = parse_additive_expr(parser);
 

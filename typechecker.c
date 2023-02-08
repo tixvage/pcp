@@ -26,6 +26,8 @@ const Type builtin_types[] = {
     {"va_arg", TYPE_NEEDS_INFERRING},
 };
 
+Var_Array global_vars = {0};
+
 void check_structs(Parsed_File *decls) {
     for (int i = 0; i < decls->struct_decls.len; i++) {
         Struct_Decl *decl = decls->struct_decls.data[i];
@@ -45,6 +47,13 @@ void check_structs(Parsed_File *decls) {
         Type type = {decl->name.value, TYPE_STRUCT};
         array_push(info.types, type);
         array_push(info.structs, possible_decl);
+    }
+}
+
+void check_top_assignments(Parsed_File *decls) {
+    for (int i = 0; i < decls->top_var_decls.len; i++) {
+        Checked_Var_Decl *var = check_var_decl(decls->top_var_decls.data[i], &global_vars, NULL, 0);
+        array_push(info.top_assignments, var);
     }
 }
 
@@ -77,7 +86,10 @@ void check_functions(Parsed_File *decls) {
             array_push(vars, check_var(var));
         }
         if (!possible_decl->eextern) {
-            possible_decl->body = check_scope(vars, decls->fn_decls.data[i]->body, possible_decl, 0);
+            Var_Array vars_copy = {0};
+            array_copy(vars_copy, global_vars);
+            array_append(vars_copy, vars.data, vars.len);
+            possible_decl->body = check_scope(vars_copy, decls->fn_decls.data[i]->body, possible_decl, 0);
         }
         possible_decl->args = vars;
         array_push(info.funcs, possible_decl);
@@ -352,7 +364,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 error_msg(expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", left->type.str, right->type.str);
                 exit(1);
             }
-            if (expr->as.bin_op->op.type == TOKEN_EQUAL_EQUAL) {
+            if (expr->as.bin_op->op.type == TOKEN_EQUAL_EQUAL || expr->as.bin_op->op.type == TOKEN_BANG_EQUAL) {
                 type = type_exist("bool");
             }
             res->type = type;
@@ -573,6 +585,7 @@ bool type_eq(Type a, Type b) {
 Checked_File typechecker_check(Parsed_File *decls) {
     array_append(info.types, builtin_types, sizeof(builtin_types)/sizeof(builtin_types[0]));
     check_structs(decls);
+    check_top_assignments(decls);
     check_functions(decls);
     return info;
 }

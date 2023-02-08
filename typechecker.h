@@ -190,6 +190,10 @@ typedef struct Checked_File {
         int len;
     } structs;
     struct {
+        Checked_Var_Decl **data;
+        int len;
+    } top_assignments;
+    struct {
         Type *data;
         int len;
     } types;
@@ -198,6 +202,7 @@ typedef struct Checked_File {
 Checked_File typechecker_check(Parsed_File *decls);
 
 void check_structs(Parsed_File *decls);
+void check_top_assignments(Parsed_File *decls);
 void check_functions(Parsed_File *decls);
 Checked_Fn_Decl *function_exist(char *name);
 Checked_Struct_Decl *struct_exist(char *name);
