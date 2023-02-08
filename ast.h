@@ -121,6 +121,7 @@ typedef struct Struct_Decl {
         Var_Decl **data;
         int len;
     } vars;
+    bool eextern;
 } Struct_Decl;
 
 typedef enum Expr_Kind {

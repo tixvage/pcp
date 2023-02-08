@@ -61,10 +61,21 @@ Stmt parse_top_stmt(Parser *parser) {
             };
         } break;
         case TOKEN_KEYWORD_EXTERN: {
-            return (Stmt){
-                .kind = STMT_FN_DECL,
-                .as = {.fn_decl = parse_extern_fn_decl(parser)},
-            };
+            Token peek_tk = parser_peek_token(parser);
+            if (peek_tk.type == TOKEN_KEYWORD_FN) {
+                return (Stmt){
+                    .kind = STMT_FN_DECL,
+                    .as = {.fn_decl = parse_extern_fn_decl(parser)},
+                };
+            } else if (peek_tk.type == TOKEN_KEYWORD_STRUCT) {
+                return (Stmt){
+                    .kind = STMT_STRUCT_DECL,
+                    .as = {.struct_decl = parse_extern_struct_decl(parser)},
+                };
+            } else {
+                error_msg(peek_tk.loc, ERROR_FATAL, "expected `fn` or `struct` after extern");
+                exit(1);
+            }
         } break;
         case TOKEN_SEMICOLON: {
             error_msg(tk.loc, ERROR_WARNING, "extra `;`");
@@ -524,6 +535,7 @@ Struct_Decl *parse_struct_decl(Parser *parser) {
     parser_expect(parser, TOKEN_LBRACE, "expected `{`");
 
     Struct_Decl *struct_decl = malloc(sizeof(Struct_Decl));
+    struct_decl->eextern = false;
     struct_decl->name = name;
     struct_decl->vars.data = NULL;
     struct_decl->vars.len = 0;
@@ -532,6 +544,21 @@ Struct_Decl *parse_struct_decl(Parser *parser) {
         array_push(struct_decl->vars, parse_var_decl(parser));
     }
     parser_expect(parser, TOKEN_RBRACE, "expected `}`");
+
+    return struct_decl;
+}
+
+Struct_Decl *parse_extern_struct_decl(Parser *parser) {
+    Struct_Decl *struct_decl = malloc(sizeof(Struct_Decl));
+    parser_eat(parser);
+    parser_expect(parser, TOKEN_KEYWORD_STRUCT, "expected `struct` after `extern`");
+    Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    parser_expect(parser, TOKEN_SEMICOLON, "expected `;` after declaration of extern struct");
+
+    struct_decl->eextern = true;
+    struct_decl->name = name;
+    struct_decl->vars.data = NULL;
+    struct_decl->vars.len = 0;
 
     return struct_decl;
 }

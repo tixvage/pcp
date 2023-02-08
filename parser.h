@@ -42,6 +42,7 @@ Fn_Decl *parse_fn_decl(Parser *parser);
 Fn_Decl *parse_extern_fn_decl(Parser *parser);
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl);
 Struct_Decl *parse_struct_decl(Parser *parser);
+Struct_Decl *parse_extern_struct_decl(Parser *parser);
 Return_Stmt *parse_return_stmt(Parser *parser);
 If_Stmt *parse_if_stmt(Parser *parser);
 For_Stmt *parse_for_stmt(Parser *parser);

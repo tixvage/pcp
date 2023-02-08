@@ -31,11 +31,17 @@ void cgen_structs(Checked_File *decls) {
 }
 
 void cgen_struct(Checked_Struct_Decl *sc) {
-    fprintf(f, "typedef struct %s {\n", sc->name.value);
+    fprintf(f, "typedef struct %s ", sc->name.value);
+    if (!sc->eextern && sc->vars.len == 0) {
+        fprintf(f, "{\n");
+    }
     for (int i = 0; i < sc->vars.len; i++) {
         fprintf(f, "%s %s;\n", sc->vars.data[i]->type.str, sc->vars.data[i]->name.value);
     }
-    fprintf(f, "} %s;\n", sc->name.value);
+    if (!sc->eextern && sc->vars.len == 0) {
+        fprintf(f, "}");
+    }
+    fprintf(f, "%s;\n", sc->name.value);
 }
 
 void cgen_functions(Checked_File *decls) {

@@ -119,6 +119,7 @@ typedef struct Checked_Struct_Decl {
         Checked_Var_Decl **data;
         int len;
     } vars;
+    bool eextern;
 } Checked_Struct_Decl;
 
 typedef enum Checked_Expr_Kind {

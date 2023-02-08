@@ -44,6 +44,7 @@ void check_structs(Parsed_File *decls) {
             array_push(possible_decl->vars, var_decl);
         }
         possible_decl->name = decl->name;
+        possible_decl->eextern = decl->eextern;
         Type type = {decl->name.value, TYPE_STRUCT};
         array_push(info.types, type);
         array_push(info.structs, possible_decl);
