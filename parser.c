@@ -28,6 +28,16 @@ Token parser_expect(Parser *parser, Token_Type type, const char *err) {
     return prev;
 }
 
+Token parser_peek_token(Parser *parser) {
+    Lexer temp_lexer = parser->lexer;
+    Token temp_token = parser->current_token;
+    parser_eat(parser);
+    Token res = parser->current_token;
+    parser->lexer = temp_lexer;
+    parser->current_token = temp_token;
+    return res;
+}
+
 Stmt parse_top_stmt(Parser *parser) {
     Token tk = parser->current_token;
     switch (tk.type) {
@@ -103,27 +113,17 @@ Stmt parse_child_stmt(Parser *parser) {
             };
         } break;
         case TOKEN_IDENTIFIER: {
-            //TODO: lexer peek
-            Lexer temp_lexer = parser->lexer;
-            Token temp_token = parser->current_token;
-            parser_eat(parser);
-            if (parser->current_token.type == TOKEN_EQUAL) {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
+            Token peek_tk = parser_peek_token(parser);
+            if (peek_tk.type == TOKEN_EQUAL) {
                 return (Stmt){
                     .kind = STMT_VAR_ASSIGN,
                     .as = {.var_assign = parse_var_assign(parser)},
                 };
-            } else if (parser->current_token.type == TOKEN_COLON || parser->current_token.type == TOKEN_COLON_EQUAL) {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
+            } else if (peek_tk.type == TOKEN_COLON || peek_tk.type == TOKEN_COLON_EQUAL) {
                 return (Stmt){
                     .kind = STMT_VAR_DECL,
                     .as = {.var_decl = parse_var_decl(parser)},
                 };
-            } else {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
             }
         } break;
         case TOKEN_SEMICOLON: {
@@ -183,21 +183,14 @@ Expr *parse_primary_expr(Parser *parser) {
             return expr;
         } break;
         case TOKEN_IDENTIFIER: {
-            Lexer temp_lexer = parser->lexer;
-            Token temp_token = parser_eat(parser);
-            if (parser->current_token.type == TOKEN_LPAREN) {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
-
+            Token peek_tk = parser_peek_token(parser);
+            if (peek_tk.type == TOKEN_LPAREN) {
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_FUNC_CALL;
                 expr->as = (Expr_As){.func_call = parse_func_call(parser)};
-                expr->loc = temp_token.loc;
+                expr->loc = tk.loc;
                 return expr;
-            } else if (parser->current_token.type == TOKEN_DOT) {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
-
+            } else if (peek_tk.type == TOKEN_DOT) {
                 Identifier *identifier = malloc(sizeof(Identifier));
                 identifier->name = parser_eat(parser).value;
                 parser_expect(parser, TOKEN_DOT, "expected `.`");
@@ -211,19 +204,16 @@ Expr *parse_primary_expr(Parser *parser) {
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_IDENTIFIER;
                 expr->as = (Expr_As){.identifier = identifier};
-                expr->loc = temp_token.loc;
+                expr->loc = tk.loc;
                 return expr;
             } else {
-                parser->lexer = temp_lexer;
-                parser->current_token = temp_token;
-
                 Identifier *identifier = malloc(sizeof(Identifier));
                 identifier->name = parser_eat(parser).value;
                 identifier->child = NULL;
                 Expr *expr = malloc(sizeof(Expr));
                 expr->kind = EXPR_IDENTIFIER;
                 expr->as = (Expr_As){.identifier = identifier};
-                expr->loc = temp_token.loc;
+                expr->loc = tk.loc;
                 return expr;
             }
         } break;
