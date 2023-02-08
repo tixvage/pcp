@@ -31,7 +31,12 @@ fn main(): i32 {
     print_person(p);
     dumber : Dumb = {
         a = "hello",
+        c = {
+            name = "hello",
+            age = 30,
+        },
     };
+    dumber.c = { name = "sussy" };
     p = dumber.c;
     print_person(p);
     if dumber.b == 21 - 1 {

@@ -262,15 +262,34 @@ Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy
     Checked_Var_Assign *res = calloc(1, sizeof(Checked_Var_Assign));
 
     Checked_Var possible_var = var_exist(vars_copy, var_assign->var->name);
-    if (!possible_var.type.str) {
+    Type type = possible_var.type;
+
+    if (!type.str) {
         error_msg(var_assign->loc, ERROR_FATAL, "variable `%s` is undeclared", var_assign->var->name);
         exit(1);
     }
 
+    Identifier *root = var_assign->var;
+    while (root->child) {
+        Checked_Struct_Decl *possible_struct = struct_exist(type.str);
+        if (!possible_struct) {
+            error_msg(var_assign->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+            exit(1);
+        }
+        Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
+        if (!possible_var) {
+            error_msg(var_assign->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
+            exit(1);
+        }
+        type = possible_var->type;
+
+        root = root->child;
+    }
+
     res->var = var_assign->var;
-    Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, possible_var.type);
-    if (!type_eq(expr->type, possible_var.type)) {
-        error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var.type.str, expr->type.str);
+    Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, type);
+    if (!type_eq(expr->type, type)) {
+        error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", type.str, expr->type.str);
         exit(1);
     }
     res->expr = expr;
