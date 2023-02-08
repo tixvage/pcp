@@ -185,7 +185,7 @@ Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checke
         error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
         exit(1);
     }
-    res->var = possible_var;
+    res->var = check_var(for_stmt->var);
 
     res->range.start = check_expr(for_stmt->range.start, vars_copy, fn, deep, type_exist("i32"));
     res->range.end = check_expr(for_stmt->range.end, vars_copy, fn, deep, type_exist("i32"));
