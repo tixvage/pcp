@@ -418,7 +418,6 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     res->type = wanted_type;
                     res->kind = CHECKED_EXPR_STRUCT_CONSTRUCT;
                     res->as.struct_construct = csc;
-                    assert(0 && "hm");
                     return res;
                 } else {
                     error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type.str);

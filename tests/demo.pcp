@@ -16,13 +16,13 @@ struct Person {
 struct Dumb {
     a := "baka";
     b := 20;
-    c: Person = {
+    c := {
         name = "sussy",
     } as Person;
 }
 
 fn main(): i32 {
-    p :Person= {name = "hello"};
+    p := {name = "hello"} as Person;
     print_person(p);
     p = {age = 30, name = "yo"};
     print_person(p);
@@ -34,6 +34,11 @@ fn main(): i32 {
     };
     p = dumber.c;
     print_person(p);
+    if dumber.b == 21 - 1 {
+        for i in 0..5 {
+            print_person({name = "sussy baka"});
+        }
+    }
     return 0;
 }
 
