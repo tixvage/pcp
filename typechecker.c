@@ -66,7 +66,7 @@ void check_functions(Parsed_File *decls) {
             error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
             exit(1);
         }
-        Type possible_type = type_exist(decls->fn_decls.data[i]->return_type);
+        Type possible_type = check_type(decls->fn_decls.data[i]->return_type);
         if (!possible_type.str) {
             error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` has invalid return type", decls->fn_decls.data[i]->name.value);
             exit(1);
@@ -241,7 +241,7 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
     }
     res->name = var_decl->name;
 
-    Type possible_var_type = type_exist(var_decl->type);
+    Type possible_var_type = check_type(var_decl->type);
     if (!possible_var_type.str) {
         error_msg(var_decl->name.loc, ERROR_FATAL, "variable `%s` has invalid type", var_decl->name.value);
         exit(1);
@@ -259,7 +259,7 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
             possible_var_type = res->value->type;
         }
         if (!type_eq(possible_var_type, res->value->type)) {
-            error_msg(var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", var_decl->type, res->value->type.str);
+            error_msg(var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var_type.str, res->value->type.str);
             exit(1);
         }
     }
@@ -378,7 +378,11 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
         } break;
         case EXPR_UN_OP: {
             Checked_Expr *un_op_expr = check_expr(expr->as.un_op->expr, vars, fn, deep, wanted_type);
-            res->type = un_op_expr->type;
+            Type type = un_op_expr->type;
+            if (expr->as.un_op->op.type == TOKEN_CARET) {
+                type.flags |= TYPE_POINTER;
+            }
+            res->type = type;
             res->kind = CHECKED_EXPR_UN_OP;
             Checked_Un_Op *un_op = malloc(sizeof(Checked_Un_Op));
             un_op->expr = un_op_expr;
@@ -577,6 +581,18 @@ Checked_Var check_var(Var var) {
     }
     res.type = possible_type;
     return res;
+}
+
+Type check_type(Parser_Type t) {
+    if (!t.id) {
+        return type_exist("auto");
+    }
+    Type possible_type = type_exist(t.id->name);
+    if (t.pointer) {
+        possible_type.flags |= TYPE_POINTER;
+    }
+
+    return possible_type;
 }
 
 bool type_eq(Type a, Type b) {

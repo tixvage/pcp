@@ -1,18 +1,33 @@
 extern fn printf(fmt: cstr, ...): i32;
-extern fn exit(code: i32): void;
-extern fn SDL_Init(flags: u32): i32;
 
-const SDL_INIT_EVERYTHING := 65535 as u32;
+fn print_person(p: Person): void {
+    printf("p = %d, %s\n", p.age.i, p.name);
+}
 
-fn debug_log(str: cstr): void {
-    printf("%s\n", str);
+struct Hello {
+    i: *i32;
+}
+
+struct Person {
+    age: *Hello;
+    name: cstr;
 }
 
 fn main(): i32 {
-    if SDL_Init(SDL_INIT_EVERYTHING) != 0 {
-        debug_log("failed to init sdl");
-        exit(1);
-    }
+    i := 20;
+
+    age := {
+        i = ^i,
+    } as Hello;
+
+    p := {
+        age = ^age,
+        name = "sussy",
+    } as Person;
+
+    age_as_num := p.age.i;
+
+    print_person(p);
+
     return 0;
 }
-

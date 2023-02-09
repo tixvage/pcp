@@ -35,6 +35,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_COLON_COLON] = "::",
     [TOKEN_COMMA] = ",",
     [TOKEN_QUESTION_MARK] = "?",
+    [TOKEN_CARET] = "^",
     [TOKEN_DOLLAR_SIGN] = "$",
     [TOKEN_ANGLE_BRACKET_LEFT] = "<",
     [TOKEN_ANGLE_BRACKET_LEFT_EQUAL] = "<=",

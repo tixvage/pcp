@@ -50,6 +50,11 @@ struct Identifier {
     struct Identifier *child;
 };
 
+typedef struct Parser_Type {
+    Identifier *id;
+    bool pointer;
+} Parser_Type;
+
 typedef struct Struct_Construct_Arg {
     Token name;
     Expr *expr;
@@ -60,7 +65,6 @@ typedef struct Struct_Construct {
         Struct_Construct_Arg *data;
         int len;
     } args;
-    char *type;
 } Struct_Construct;
 
 typedef struct Func_Call {
@@ -98,14 +102,14 @@ typedef struct Return_Stmt {
 typedef struct Var_Decl {
     bool constant;
     Token name;
-    char *type;
+    Parser_Type type;
     Expr *value;
     bool zero_init;
 } Var_Decl;
 
 typedef struct Fn_Decl {
     Token name;
-    char *return_type;
+    Parser_Type return_type;
     bool eextern;
     bool has_va_arg;
     Scope body;

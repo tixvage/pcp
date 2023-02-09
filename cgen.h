@@ -6,6 +6,7 @@
 void cgen_generate(Checked_File *decls, const char *path);
 
 void cgen_prepare(void);
+void cgen_type(Type type);
 void cgen_structs(Checked_File *decls);
 void cgen_struct(Checked_Struct_Decl *sc);
 void cgen_functions(Checked_File *decls);

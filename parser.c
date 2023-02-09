@@ -173,22 +173,17 @@ Expr *parse_expr(Parser *parser) {
 Expr *parse_primary_expr(Parser *parser) {
     Token tk = parser->current_token;
     switch (tk.type) {
-        case TOKEN_PLUS: {
+        case TOKEN_PLUS:
+        case TOKEN_MINUS:
+        case TOKEN_CARET: {
             Un_Op *un_op = malloc(sizeof(Un_Op));
             un_op->op = parser_eat(parser);
             un_op->expr = parse_primary_expr(parser);
             Expr *expr = malloc(sizeof(Expr));
             expr->kind = EXPR_UN_OP;
-            expr->as = (Expr_As){.un_op = un_op};
-            expr->loc = un_op->op.loc;
-            return expr;
-        } break;
-        case TOKEN_MINUS: {
-            Un_Op *un_op = malloc(sizeof(Un_Op));
-            un_op->op = parser_eat(parser);
-            un_op->expr = parse_primary_expr(parser);
-            Expr *expr = malloc(sizeof(Expr));
-            expr->kind = EXPR_UN_OP;
+            if (un_op->op.type == TOKEN_CARET && un_op->expr->kind != EXPR_IDENTIFIER) {
+                error_msg(un_op->op.loc, ERROR_FATAL, "lvalue expected");
+            }
             expr->as = (Expr_As){.un_op = un_op};
             expr->loc = un_op->op.loc;
             return expr;
@@ -387,10 +382,10 @@ Struct_Construct *parse_struct_construct_expr(Parser *parser) {
 Var_Decl *parse_var_decl(Parser *parser) {
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
-    Token var_type = (Token){.type = TOKEN_IDENTIFIER, .value = "auto"};
+    Parser_Type var_type = {0};
     bool zero_init = false;
     if (decl_type.type == TOKEN_COLON) {
-        var_type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for variable");
+        var_type = parse_type(parser);
         Token next = parser_eat(parser);
         if (next.type == TOKEN_SEMICOLON) {
             zero_init = true;
@@ -406,7 +401,7 @@ Var_Decl *parse_var_decl(Parser *parser) {
     Var_Decl *var_decl = malloc(sizeof(Var_Decl));
     var_decl->constant = false;
     var_decl->name = id;
-    var_decl->type = var_type.value;
+    var_decl->type = var_type;
     Expr *expr = NULL;
     if (!zero_init) {
         expr = parse_expr(parser);
@@ -436,11 +431,11 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
     Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
     parse_fn_decl_args(parser, fn_decl);
     parser_expect(parser, TOKEN_COLON, "Expected `:`");
-    Token return_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    Parser_Type return_type = parse_type(parser);
     parser_expect(parser, TOKEN_LBRACE, "Expected `{`");
 
     fn_decl->name = name;
-    fn_decl->return_type = return_type.value;
+    fn_decl->return_type = return_type;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
         array_push(fn_decl->body, parse_child_stmt(parser));
@@ -463,11 +458,11 @@ Fn_Decl *parse_extern_fn_decl(Parser *parser) {
     Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
     parse_fn_decl_args(parser, fn_decl);
     parser_expect(parser, TOKEN_COLON, "Expected `:`");
-    Token return_type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
+    Parser_Type return_type = parse_type(parser);
     parser_expect(parser, TOKEN_SEMICOLON, "expected `;` after declaration of extern function");
     
     fn_decl->name = name;
-    fn_decl->return_type = return_type.value;
+    fn_decl->return_type = return_type;
 
     return fn_decl;
 }
@@ -667,6 +662,22 @@ void parse_func_call_args(Parser *parser, Func_Call *func_call) {
     }
 
     parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
+}
+
+Parser_Type parse_type(Parser *parser) {
+    Parser_Type res = {0};
+    if (parser->current_token.type == TOKEN_ASTERISK) {
+        res.pointer = true;
+        parser_eat(parser);
+    }
+    Expr *expr = parse_expr(parser);
+    if (expr->kind != EXPR_IDENTIFIER) {
+        error_msg(expr->loc, ERROR_FATAL, "expected identifier");
+        exit(1);
+    }
+    res.id = expr->as.identifier;
+
+    return res;
 }
 
 void parse_file(Parser *parser) {

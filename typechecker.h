@@ -20,6 +20,7 @@ typedef enum Type_Flag {
     TYPE_VOID = BIT(4),
     TYPE_NEEDS_INFERRING = BIT(5),
     TYPE_STRUCT = BIT(6) | TYPE_USER_DEFINED,
+    TYPE_POINTER = BIT(7),
 } Type_Flag;
 
 typedef struct Checked_Var {
@@ -220,6 +221,7 @@ Checked_Var var_exist(Var_Array vars, char *name);
 Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name);
 Type type_exist(char *str);
 Checked_Var check_var(Var var);
+Type check_type(Parser_Type t);
 bool type_eq(Type a, Type b);
 
 #endif

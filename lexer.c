@@ -225,6 +225,9 @@ Token get_next_token(Lexer *lexer) {
             case '?':
                 return lexer_advance_current(lexer, TOKEN_QUESTION_MARK);
                 break;
+            case '^':
+                return lexer_advance_current(lexer, TOKEN_CARET);
+                break;
             case '/':
                 if (lexer_peek(lexer, 1) == '/') {
                     lexer_skip_comment(lexer);

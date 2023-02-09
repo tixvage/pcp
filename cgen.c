@@ -24,6 +24,13 @@ void cgen_prepare(void) {
     fprintf(f, "\n");
 }
 
+void cgen_type(Type type) {
+    fprintf(f, "%s", type.str);
+    if ((type.flags & TYPE_POINTER) != 0) {
+        fprintf(f, "*");
+    }
+}
+
 void cgen_structs(Checked_File *decls) {
     for (int i = 0; i < decls->structs.len; i++) {
         cgen_struct(decls->structs.data[i]);
@@ -32,13 +39,14 @@ void cgen_structs(Checked_File *decls) {
 
 void cgen_struct(Checked_Struct_Decl *sc) {
     fprintf(f, "typedef struct %s ", sc->name.value);
-    if (!sc->eextern && sc->vars.len == 0) {
+    if (!sc->eextern && sc->vars.len != 0) {
         fprintf(f, "{\n");
     }
     for (int i = 0; i < sc->vars.len; i++) {
-        fprintf(f, "%s %s;\n", sc->vars.data[i]->type.str, sc->vars.data[i]->name.value);
+        cgen_type(sc->vars.data[i]->type);
+        fprintf(f, " %s;\n", sc->vars.data[i]->name.value);
     }
-    if (!sc->eextern && sc->vars.len == 0) {
+    if (!sc->eextern && sc->vars.len != 0) {
         fprintf(f, "}");
     }
     fprintf(f, "%s;\n", sc->name.value);
@@ -51,19 +59,23 @@ void cgen_functions(Checked_File *decls) {
 }
 
 void cgen_function(Checked_Fn_Decl *fn) {
-    fprintf(f, "%s %s(", fn->return_type.str, fn->name.value);
+    cgen_type(fn->return_type);
+    fprintf(f, " %s(", fn->name.value);
     if (fn->args.data == NULL) {
         fprintf(f, "void");
     } else {
         Checked_Var first_arg = fn->args.data[0];
         if (strcmp(first_arg.type.str, "va_arg") != 0) {
-            fprintf(f, "%s %s", first_arg.type.str, first_arg.name.value);
+            cgen_type(first_arg.type);
+            fprintf(f, " %s", first_arg.name.value);
         } else {
             fprintf(f, "%s", first_arg.name.value);
         }
         for (int i = 1; i < fn->args.len; i++) {
             if (strcmp(fn->args.data[i].type.str, "va_arg") != 0) {
-                fprintf(f, ", %s %s", fn->args.data[i].type.str, fn->args.data[i].name.value);
+                fprintf(f, ", ");
+                cgen_type(fn->args.data[i].type);
+                fprintf(f, " %s", fn->args.data[i].name.value);
             } else {
                 fprintf(f, ", %s", fn->args.data[i].name.value);
             }
@@ -144,7 +156,8 @@ void cgen_return_statment(Checked_Return_Stmt *return_stmt) {
 }
 
 void cgen_var_declaration(Checked_Var_Decl *var_decl) {
-    fprintf(f, "%s %s = ", var_decl->value->type.str, var_decl->name.value);
+    cgen_type(var_decl->type);
+    fprintf(f, " %s = ", var_decl->name.value);
     if (var_decl->zero_init) {
         fprintf(f, "{0}");
     } else {
@@ -176,6 +189,7 @@ void cgen_expr(Checked_Expr *expr) {
         case EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);
             Identifier *root = expr->as.identifier;
+            //TODO: we need checked_id that can store types of ids
             while (root->child) {
                 fprintf(f, ".%s", root->child->name);
                 root = root->child;
@@ -187,7 +201,11 @@ void cgen_expr(Checked_Expr *expr) {
             cgen_expr(expr->as.bin_op->right);
         } break;
         case EXPR_UN_OP: {
-            fprintf(f, "%s(", expr->as.un_op->op.value);
+            if (expr->as.un_op->op.type == TOKEN_CARET) {
+                fprintf(f, "&(");
+            } else {
+                fprintf(f, "%s(", expr->as.un_op->op.value);
+            }
             cgen_expr(expr->as.un_op->expr);
             fprintf(f, ")");
         } break;
@@ -206,7 +224,9 @@ void cgen_expr(Checked_Expr *expr) {
             fprintf(f, ")");
         } break;
         case EXPR_CAST: {
-            fprintf(f, "(%s)(", expr->as.cast->type.str);
+            fprintf(f, "(");
+            cgen_type(expr->as.cast->type);
+            fprintf(f, ")(");
             cgen_expr(expr->as.cast->expr);
             fprintf(f, ")");
         } break;
