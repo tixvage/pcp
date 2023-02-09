@@ -57,6 +57,12 @@ typedef struct Checked_Cast {
     Type type;
 } Checked_Cast;
 
+typedef struct Checked_Identifier {
+    char *name;
+    Type type;
+    struct Checked_Identifier *child;
+} Checked_Identifier;
+
 typedef struct Checked_Struct_Construct_Arg {
     Token name;
     Checked_Expr *expr;
@@ -79,7 +85,7 @@ typedef struct Checked_Func_Call {
 } Checked_Func_Call;
 
 typedef struct Checked_Var_Assign {
-    Identifier *var;
+    Checked_Identifier *var;
     Checked_Expr *expr;
 } Checked_Var_Assign;
 
@@ -141,7 +147,7 @@ typedef enum Checked_Expr_Kind {
 typedef union Checked_Expr_As {
     Number *number;
     String *string;
-    Identifier *identifier;
+    Checked_Identifier *identifier;
     Checked_Func_Call *func_call;
     Checked_Bin_Op *bin_op;
     Checked_Un_Op *un_op;
@@ -220,8 +226,10 @@ Checked_Return_Stmt *check_return_stmt(Return_Stmt *return_stmt, Var_Array vars_
 Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn_Decl *fn, int deep);
 Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_Expr *check_expr(Expr *expr, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep, Type wanted_type);
+Checked_Identifier *check_identifier(Identifier *id, Loc loc, Var_Array vars_copy);
 Checked_Var var_exist(Var_Array vars, char *name);
 Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name);
+Type get_actual_id_type(Checked_Identifier *id);
 Type type_exist(char *str);
 Checked_Var check_var(Var var);
 Type check_type(Parser_Type t);

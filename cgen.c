@@ -168,9 +168,14 @@ void cgen_var_declaration(Checked_Var_Decl *var_decl) {
 
 void cgen_var_assignment(Checked_Var_Assign *var_assign) {
     fprintf(f, "%s", var_assign->var->name);
-    Identifier *root = var_assign->var;
+    Checked_Identifier *root = var_assign->var;
     while (root->child) {
-        fprintf(f, ".%s", root->child->name);
+        if ((root->type.flags & TYPE_POINTER) != 0) {
+            fprintf(f, "->");
+        } else {
+            fprintf(f, ".");
+        }
+        fprintf(f, "%s", root->child->name);
         root = root->child;
     }
     fprintf(f, " = ");
@@ -188,10 +193,14 @@ void cgen_expr(Checked_Expr *expr) {
         } break;
         case EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);
-            Identifier *root = expr->as.identifier;
-            //TODO: we need checked_id that can store types of ids
+            Checked_Identifier *root = expr->as.identifier;
             while (root->child) {
-                fprintf(f, ".%s", root->child->name);
+                if ((root->type.flags & TYPE_POINTER) != 0) {
+                    fprintf(f, "->");
+                } else {
+                    fprintf(f, ".");
+                }
+                fprintf(f, "%s", root->child->name);
                 root = root->child;
             }
         } break;

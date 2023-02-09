@@ -17,14 +17,14 @@ fn main(): i32 {
     i := 20;
 
     age := {
-        i = i,
+        i = ^i,
     } as Hello;
 
     p := {
         age = ^age,
         name = "sussy",
     } as Person;
-
+    p.age.i;
     age_as_num := p.age.i;
 
     print_person(p);

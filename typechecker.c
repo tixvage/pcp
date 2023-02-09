@@ -274,32 +274,9 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
 Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
     Checked_Var_Assign *res = calloc(1, sizeof(Checked_Var_Assign));
 
-    Checked_Var possible_var = var_exist(vars_copy, var_assign->var->name);
-    Type type = possible_var.type;
-
-    if (!type.str) {
-        error_msg(var_assign->loc, ERROR_FATAL, "variable `%s` is undeclared", var_assign->var->name);
-        exit(1);
-    }
-
-    Identifier *root = var_assign->var;
-    while (root->child) {
-        Checked_Struct_Decl *possible_struct = struct_exist(type.str);
-        if (!possible_struct) {
-            error_msg(var_assign->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
-            exit(1);
-        }
-        Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
-        if (!possible_var) {
-            error_msg(var_assign->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
-            exit(1);
-        }
-        type = possible_var->type;
-
-        root = root->child;
-    }
-
-    res->var = var_assign->var;
+    Checked_Identifier *var = check_identifier(var_assign->var, var_assign->loc, vars_copy);
+    res->var = var;
+    Type type = get_actual_id_type(var);
     Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, type);
     if (!type_eq(expr->type, type)) {
         error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(type), Type_Arg(expr->type));
@@ -329,32 +306,11 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->as.string = expr->as.string;
         } break;
         case EXPR_IDENTIFIER: {
-            Type type = var_exist(vars, expr->as.identifier->name).type;
-            if (!type.str) {
-                error_msg(expr->loc, ERROR_FATAL, "variable `%s` could not found in scope", expr->as.identifier->name);
-                exit(1);
-            }
+            Checked_Identifier *id = check_identifier(expr->as.identifier, expr->loc, vars);
 
-            Identifier *root = expr->as.identifier;
-            while (root->child) {
-                Checked_Struct_Decl *possible_struct = struct_exist(type.str);
-                if (!possible_struct) {
-                    error_msg(expr->loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
-                    exit(1);
-                }
-                Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->child->name);
-                if (!possible_var) {
-                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->child->name);
-                    exit(1);
-                }
-                type = possible_var->type;
-
-                root = root->child;
-            }
-
-            res->type = type;
+            res->type = get_actual_id_type(id);
             res->kind = CHECKED_EXPR_IDENTIFIER;
-            res->as.identifier = expr->as.identifier;
+            res->as.identifier = id;
         } break;
         case EXPR_BIN_OP: {
             Checked_Expr *left = check_expr(expr->as.bin_op->left, vars, fn, deep, wanted_type);
@@ -543,6 +499,43 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
     return res;
 }
 
+Checked_Identifier *check_identifier(Identifier *identifier, Loc loc, Var_Array vars) {
+    Type type = var_exist(vars, identifier->name).type;
+    if (!type.str) {
+        error_msg(loc, ERROR_FATAL, "variable `%s` could not found in scope", identifier->name);
+        exit(1);
+    }
+    Checked_Identifier *id = calloc(1, sizeof(Checked_Identifier));
+    id->type = type;
+    id->name = identifier->name;
+
+    Checked_Identifier *checked_root = id;
+    Identifier *root = identifier;
+
+    while (root->child) {
+        root = root->child;
+        Checked_Struct_Decl *possible_struct = struct_exist(type.str);
+        if (!possible_struct) {
+            error_msg(loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+            exit(1);
+        }
+        Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->name);
+        if (!possible_var) {
+            error_msg(loc, ERROR_FATAL, "struct `%s` does not have a field named `%s`", possible_struct->name.value, root->name);
+            exit(1);
+        }
+        type = possible_var->type;
+
+        Checked_Identifier *child = calloc(1, sizeof(Checked_Identifier));
+        child->type = possible_var->type;
+        child->name = root->name;
+        checked_root->child = child;
+        checked_root = checked_root->child;
+    }
+
+    return id;
+}
+
 Checked_Var var_exist(Var_Array vars, char *name) {
     for (int i = 0; i < vars.len; i++) {
         if (strcmp(vars.data[i].name.value, name) == 0) {
@@ -559,6 +552,18 @@ Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name) {
         }
     }
     return NULL;
+}
+
+Type get_actual_id_type(Checked_Identifier *id) {
+    Type type = id->type;
+    Checked_Identifier *ptr = id;
+
+    while (ptr->child) {
+        type = ptr->child->type;
+        ptr = ptr->child;
+    }
+
+    return type;
 }
 
 Type type_exist(char *str) {
