@@ -124,6 +124,12 @@ Stmt parse_child_stmt(Parser *parser) {
                 .as = {.for_stmt = parse_for_stmt(parser)},
             };
         } break;
+        case TOKEN_KEYWORD_WHILE: {
+            return (Stmt){
+                .kind = STMT_WHILE_STMT,
+                .as = {.while_stmt = parse_while_stmt(parser)},
+            };
+        } break;
         case TOKEN_IDENTIFIER: {
             Token peek_tk = parser_peek_token(parser);
             if (peek_tk.type == TOKEN_EQUAL) {
@@ -535,12 +541,17 @@ Struct_Decl *parse_extern_struct_decl(Parser *parser) {
     parser_eat(parser);
     parser_expect(parser, TOKEN_KEYWORD_STRUCT, "expected `struct` after `extern`");
     Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
-    parser_expect(parser, TOKEN_SEMICOLON, "expected `;` after declaration of extern struct");
+    parser_expect(parser, TOKEN_LBRACE, "expected `{`");
 
     struct_decl->eextern = true;
     struct_decl->name = name;
     struct_decl->vars.data = NULL;
     struct_decl->vars.len = 0;
+
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
+        array_push(struct_decl->vars, parse_var_decl(parser));
+    }
+    parser_expect(parser, TOKEN_RBRACE, "expected `}`");
 
     return struct_decl;
 }
@@ -593,6 +604,23 @@ For_Stmt *parse_for_stmt(Parser *parser) {
     parser_expect(parser, TOKEN_RBRACE, "expected `}`");
 
     return for_stmt;
+}
+
+While_Stmt *parse_while_stmt(Parser *parser) {
+    parser_eat(parser);
+    Expr *expr = parse_expr(parser);
+    parser_expect(parser, TOKEN_LBRACE, "Expected `{`");
+
+    While_Stmt *while_stmt = malloc(sizeof(While_Stmt));
+    while_stmt->expr = expr;
+    while_stmt->body.data = NULL;
+
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
+        array_push(while_stmt->body, parse_child_stmt(parser));
+    }
+    parser_expect(parser, TOKEN_RBRACE, "Expected `}`");
+
+    return while_stmt;
 }
 
 Var_Assign *parse_var_assign(Parser *parser) {

@@ -132,6 +132,11 @@ Checked_Scope check_scope(Var_Array vars_copy, Scope scope, Checked_Fn_Decl *fn,
                 checked_stmt.kind = CHECKED_STMT_IF_STMT;
                 checked_stmt.as.if_stmt = if_stmt;
             } break;
+            case STMT_WHILE_STMT: {
+                Checked_While_Stmt *while_stmt = check_while_stmt(stmt.as.while_stmt, vars, fn, deep + 1);
+                checked_stmt.kind = CHECKED_STMT_WHILE_STMT;
+                checked_stmt.as.while_stmt = while_stmt;
+            } break;
             case STMT_FOR_STMT: {
                 Checked_For_Stmt *for_stmt = check_for_stmt(stmt.as.for_stmt, vars, fn, deep + 1);
                 checked_stmt.kind = CHECKED_STMT_FOR_STMT;
@@ -186,6 +191,20 @@ Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn
     }
 
     res->body = check_scope(vars_copy, if_stmt->body, fn, deep);
+
+    return res;
+}
+
+Checked_While_Stmt *check_while_stmt(While_Stmt *while_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
+    Checked_While_Stmt *res = calloc(1, sizeof(Checked_While_Stmt));
+
+    res->expr = check_expr(while_stmt->expr, vars_copy, fn, deep, type_exist("bool"));
+    if ((res->expr->type.flags & TYPE_BOOLEAN) == 0) {
+        error_msg(while_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `"Type_Fmt"`", Type_Arg(res->expr->type));
+        exit(1);
+    }
+
+    res->body = check_scope(vars_copy, while_stmt->body, fn, deep);
 
     return res;
 }

@@ -94,6 +94,11 @@ typedef struct Checked_If_Stmt {
     Checked_Expr *expr;
 } Checked_If_Stmt;
 
+typedef struct Checked_While_Stmt {
+    Checked_Scope body;
+    Checked_Expr *expr;
+} Checked_While_Stmt;
+
 typedef struct Checked_For_Stmt {
     Checked_Var var;
     struct {
@@ -168,6 +173,7 @@ typedef enum Checked_Stmt_Kind {
     CHECKED_STMT_VAR_ASSIGN,
     CHECKED_STMT_IF_STMT,
     CHECKED_STMT_FOR_STMT,
+    CHECKED_STMT_WHILE_STMT,
     CHECKED_STMT_RETURN_STMT,
     CHECKED_STMT_FN_DECL,
     CHECKED_STMT_STRUCT_DECL,
@@ -179,6 +185,7 @@ typedef union Checked_Stmt_As {
     Checked_Var_Assign *var_assign;
     Checked_If_Stmt *if_stmt;
     Checked_For_Stmt *for_stmt;
+    Checked_While_Stmt *while_stmt;
     Checked_Return_Stmt *return_stmt;
     Checked_Fn_Decl *fn_decl;
     Checked_Struct_Decl *struct_decl;
@@ -221,6 +228,7 @@ void check_function(Fn_Decl *fn);
 void check_struct(Struct_Decl *sd);
 Checked_Scope check_scope(Var_Array vars_copy, Scope scope, Checked_Fn_Decl *fn, int deep);
 Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
+Checked_While_Stmt *check_while_stmt(While_Stmt *while_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_Return_Stmt *check_return_stmt(Return_Stmt *return_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn_Decl *fn, int deep);

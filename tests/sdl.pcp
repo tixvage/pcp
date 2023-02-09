@@ -1,0 +1,16 @@
+const SDL_INIT_EVERYTHING := 62001 as u32;
+
+extern struct SDL_Window {}
+
+extern fn SDL_Init(flags: u32): i32;
+extern fn SDL_Log(fmt: cstr, args: va_arg): void;
+extern fn SDL_CreateWindow(name: cstr, x: i32, y: i32, w: i32, h: i32, flags: u32): *SDL_Window;
+
+fn main(): i32 {
+    if SDL_Init(SDL_INIT_EVERYTHING) != 0 {
+        SDL_Log("failed to init sdl\n");
+    }
+    win := SDL_CreateWindow("game", 0, 0, 300, 300, 0);
+    while 1 as bool {}
+    return 0;
+}

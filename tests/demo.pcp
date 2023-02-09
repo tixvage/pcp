@@ -18,7 +18,7 @@ struct Hello {
 
 struct Person {
     age: *Hello;
-    name: cstr;
+    name: cstr = "sussy";
 }
 
 fn main(): i32 {
@@ -30,7 +30,6 @@ fn main(): i32 {
 
     p := {
         age = ^age,
-        name = "sussy",
     } as Person;
 
     if ^i == p.age.i {

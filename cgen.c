@@ -39,16 +39,12 @@ void cgen_structs(Checked_File *decls) {
 
 void cgen_struct(Checked_Struct_Decl *sc) {
     fprintf(f, "typedef struct %s ", sc->name.value);
-    if (!sc->eextern && sc->vars.len != 0) {
-        fprintf(f, "{\n");
-    }
+    fprintf(f, "{\n");
     for (int i = 0; i < sc->vars.len; i++) {
         cgen_type(sc->vars.data[i]->type);
         fprintf(f, " %s;\n", sc->vars.data[i]->name.value);
     }
-    if (!sc->eextern && sc->vars.len != 0) {
-        fprintf(f, "}");
-    }
+    fprintf(f, "}");
     fprintf(f, "%s;\n", sc->name.value);
 }
 
@@ -101,13 +97,16 @@ void cgen_top_assignments(Checked_File *decls) {
 void cgen_statement(Checked_Stmt stmt) {
     switch (stmt.kind) {
         case CHECKED_STMT_IF_STMT: {
-            cgen_if_statment(stmt.as.if_stmt);
+            cgen_if_statement(stmt.as.if_stmt);
         } break;
         case CHECKED_STMT_FOR_STMT: {
-            cgen_for_statment(stmt.as.for_stmt);
+            cgen_for_statement(stmt.as.for_stmt);
+        } break;
+        case CHECKED_STMT_WHILE_STMT: {
+            cgen_while_statement(stmt.as.while_stmt);
         } break;
         case CHECKED_STMT_RETURN_STMT: {
-            cgen_return_statment(stmt.as.return_stmt);
+            cgen_return_statement(stmt.as.return_stmt);
         } break;
         case CHECKED_STMT_VAR_DECL: {
             cgen_var_declaration(stmt.as.var_decl);
@@ -127,7 +126,7 @@ void cgen_statement(Checked_Stmt stmt) {
     }
 }
 
-void cgen_if_statment(Checked_If_Stmt *if_stmt) {
+void cgen_if_statement(Checked_If_Stmt *if_stmt) {
     fprintf(f, "if (");
     cgen_expr(if_stmt->expr);
     fprintf(f, ") {\n");
@@ -137,7 +136,17 @@ void cgen_if_statment(Checked_If_Stmt *if_stmt) {
     fprintf(f, "}\n");
 }
 
-void cgen_for_statment(Checked_For_Stmt *for_stmt) {
+void cgen_while_statement(Checked_While_Stmt *while_stmt) {
+    fprintf(f, "while (");
+    cgen_expr(while_stmt->expr);
+    fprintf(f, ") {\n");
+    for (int i = 0; i < while_stmt->body.len; i++) {
+        cgen_statement(while_stmt->body.data[i]);
+    }
+    fprintf(f, "}\n");
+}
+
+void cgen_for_statement(Checked_For_Stmt *for_stmt) {
     fprintf(f, "for (i32 %s = ", for_stmt->var.name.value);
     cgen_expr(for_stmt->range.start);
     fprintf(f, "; %s < ", for_stmt->var.name.value);
@@ -149,7 +158,7 @@ void cgen_for_statment(Checked_For_Stmt *for_stmt) {
     fprintf(f, "}\n");
 }
 
-void cgen_return_statment(Checked_Return_Stmt *return_stmt) {
+void cgen_return_statement(Checked_Return_Stmt *return_stmt) {
     fprintf(f, "return ");
     cgen_expr(return_stmt->expr);
     fprintf(f, ";\n");

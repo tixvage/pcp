@@ -46,6 +46,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_KEYWORD_STRUCT] = "struct",
     [TOKEN_KEYWORD_VAR] = "var",
     [TOKEN_KEYWORD_FOR] = "for",
+    [TOKEN_KEYWORD_WHILE] = "while",
     [TOKEN_KEYWORD_IN] = "in",
     [TOKEN_KEYWORD_AS] = "as",
     [TOKEN_KEYWORD_CONST] = "const",

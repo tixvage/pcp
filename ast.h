@@ -86,6 +86,11 @@ typedef struct If_Stmt {
     Expr *expr;
 } If_Stmt;
 
+typedef struct While_Stmt {
+    Scope body;
+    Expr *expr;
+} While_Stmt;
+
 typedef struct For_Stmt {
     Token var;
     struct {
@@ -161,6 +166,7 @@ typedef union Stmt_As {
     Var_Assign *var_assign;
     If_Stmt *if_stmt;
     For_Stmt *for_stmt;
+    While_Stmt *while_stmt;
     Return_Stmt *return_stmt;
     Fn_Decl *fn_decl;
     Struct_Decl *struct_decl;
@@ -174,6 +180,7 @@ typedef enum Stmt_Kind {
     STMT_VAR_ASSIGN,
     STMT_IF_STMT,
     STMT_FOR_STMT,
+    STMT_WHILE_STMT,
     STMT_RETURN_STMT,
     STMT_FN_DECL,
     STMT_STRUCT_DECL,
