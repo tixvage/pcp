@@ -180,7 +180,7 @@ Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn
 
     res->expr = check_expr(if_stmt->expr, vars_copy, fn, deep, type_exist("bool"));
     if ((res->expr->type.flags & TYPE_BOOLEAN) == 0) {
-        error_msg(if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `%s`", res->expr->type.str);
+        error_msg(if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `"Type_Fmt"`", Type_Arg(res->expr->type));
         exit(1);
     }
 
@@ -222,7 +222,7 @@ Checked_Return_Stmt *check_return_stmt(Return_Stmt *return_stmt, Var_Array vars_
 
     res->expr = check_expr(return_stmt->expr, vars_copy, fn, deep, fn->return_type);
     if (!type_eq(res->expr->type, fn->return_type)) {
-        error_msg(return_stmt->expr->loc, ERROR_FATAL, "expected type `%s` for the return type of `%s` function but got `%s`", fn->return_type.str, fn->name.value, res->expr->type.str);
+        error_msg(return_stmt->expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` for the return type of `%s` function but got `"Type_Fmt"`", Type_Arg(fn->return_type), fn->name.value, Type_Arg(res->expr->type));
         error_msg(fn->name.loc, ERROR_NOTE, "`%s` defined here", fn->name.value);
         exit(1);
     }
@@ -259,7 +259,7 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
             possible_var_type = res->value->type;
         }
         if (!type_eq(possible_var_type, res->value->type)) {
-            error_msg(var_decl->value->loc, ERROR_FATAL, "expected type `%s` but got `%s`", possible_var_type.str, res->value->type.str);
+            error_msg(var_decl->value->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(possible_var_type), Type_Arg(res->value->type));
             exit(1);
         }
     }
@@ -302,7 +302,7 @@ Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy
     res->var = var_assign->var;
     Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, type);
     if (!type_eq(expr->type, type)) {
-        error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", type.str, expr->type.str);
+        error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(type), Type_Arg(expr->type));
         exit(1);
     }
     res->expr = expr;
@@ -362,7 +362,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             Type type = left->type;
 
             if (!type_eq(left->type, right->type)) {
-                error_msg(expr->loc, ERROR_FATAL, "expected type `%s` but got `%s`", left->type.str, right->type.str);
+                error_msg(expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(left->type), Type_Arg(right->type));
                 exit(1);
             }
             if (expr->as.bin_op->op.type == TOKEN_EQUAL_EQUAL || expr->as.bin_op->op.type == TOKEN_BANG_EQUAL) {
@@ -415,7 +415,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i], vars, fn, deep, expected_type);
                     if (!type_eq(expected_type, given_expr->type)) {
                         error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
-                        error_msg(expr->as.func_call->args.data[i]->loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_expr->type.str);
+                        error_msg(expr->as.func_call->args.data[i]->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(expected_type), Type_Arg(given_expr->type));
                         error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
                         exit(1);
                     }
@@ -512,7 +512,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                         Checked_Expr *given_expr = check_expr(sc->args.data[i].expr, vars, fn, deep, expected_type);
                         if (!type_eq(expected_type, given_expr->type)) {
                             error_msg(expr->loc, ERROR_FATAL, "fields of `%s` struct are incorrect", sd->name.value);
-                            error_msg(sc->args.data[i].name.loc, ERROR_FATAL, "expected type `%s` but got `%s`", expected_type.str, given_expr->type.str);
+                            error_msg(sc->args.data[i].name.loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(expected_type), Type_Arg(given_expr->type));
                             error_msg(sd->name.loc, ERROR_NOTE, "`%s` defined here", sd->name.value);
                             exit(1);
                         }

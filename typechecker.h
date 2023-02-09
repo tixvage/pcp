@@ -12,6 +12,9 @@ typedef struct Type {
     int flags;
 } Type;
 
+#define Type_Fmt "%c%s"
+#define Type_Arg(tp) (tp.flags & TYPE_POINTER) == 0 ? '\0' : '*', tp.str
+
 typedef enum Type_Flag {
     TYPE_NUMBER = BIT(0),
     TYPE_STRING = BIT(1),
