@@ -1,7 +1,15 @@
-extern fn printf(fmt: cstr, ...): i32;
+extern fn printf(fmt: cstr, args: va_arg): i32;
 
 fn print_person(p: Person): void {
-    printf("p = %d, %s\n", p.age.i, p.name);
+    printf("p = %d, %s\n", *p.age.i, p.name);
+}
+
+fn change_person_name_ptr(p: *Person, str: cstr): void {
+    p.name = str;
+}
+
+fn change_person_name_copy(p: Person, str: cstr): void {
+    p.name = str;
 }
 
 struct Hello {
@@ -24,9 +32,15 @@ fn main(): i32 {
         age = ^age,
         name = "sussy",
     } as Person;
-    p.age.i;
-    age_as_num := p.age.i;
 
+    if ^i == p.age.i {
+        printf("%p, %d\n", p.age.i, *p.age.i);
+    }
+
+    print_person(p);
+    change_person_name_ptr(^p, "mad");
+    print_person(p);
+    change_person_name_copy(p, "baka");
     print_person(p);
 
     return 0;

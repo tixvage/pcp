@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "utils.h"
@@ -175,13 +176,14 @@ Expr *parse_primary_expr(Parser *parser) {
     switch (tk.type) {
         case TOKEN_PLUS:
         case TOKEN_MINUS:
-        case TOKEN_CARET: {
+        case TOKEN_CARET:
+        case TOKEN_ASTERISK: {
             Un_Op *un_op = malloc(sizeof(Un_Op));
             un_op->op = parser_eat(parser);
             un_op->expr = parse_primary_expr(parser);
             Expr *expr = malloc(sizeof(Expr));
             expr->kind = EXPR_UN_OP;
-            if (un_op->op.type == TOKEN_CARET && un_op->expr->kind != EXPR_IDENTIFIER) {
+            if ((un_op->op.type == TOKEN_CARET || un_op->op.type == TOKEN_ASTERISK) && un_op->expr->kind != EXPR_IDENTIFIER) {
                 error_msg(un_op->op.loc, ERROR_FATAL, "lvalue expected");
             }
             expr->as = (Expr_As){.un_op = un_op};
@@ -473,27 +475,19 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
         parser_eat(parser);
         return;
     }
-    bool has_va_arg = false;
 
+    bool has_va_arg = false;
     {
         Var first_arg = {0};
-        Token token = parser_eat(parser);
-        if (token.type == TOKEN_DOT_DOT_DOT) {
+        Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
+        first_arg.name = id;
+        parser_expect(parser, TOKEN_COLON, "Expected `:`");
+        first_arg.type = parse_type(parser);
+        if (strcmp(first_arg.type.id->name, "va_arg") == 0) {
             has_va_arg = true;
-            first_arg.name = token;
-            first_arg.type = "va_arg";
-            array_push(fn_decl->args, first_arg);
-        } else if (token.type == TOKEN_IDENTIFIER) {
-            first_arg.name = token;
-            parser_expect(parser, TOKEN_COLON, "Expected `:`");
-            first_arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
-            array_push(fn_decl->args, first_arg);
-        } else {
-            error_msg(token.loc, ERROR_FATAL, "expected id");
-            exit(1);
         }
+        array_push(fn_decl->args, first_arg);
     }
-    
 
     if (parser->current_token.type == TOKEN_RPAREN) {
         parser_eat(parser);
@@ -503,21 +497,14 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
     while (!parser_eof(parser) && parser->current_token.type == TOKEN_COMMA) {
         parser_eat(parser);
         Var arg = {0};
-        Token token = parser_eat(parser);
-        if (token.type == TOKEN_DOT_DOT_DOT) {
+        Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
+        arg.name = id;
+        parser_expect(parser, TOKEN_COLON, "Expected `:`");
+        arg.type = parse_type(parser);
+        if (strcmp(arg.type.id->name, "va_arg") == 0) {
             has_va_arg = true;
-            arg.name = token;
-            arg.type = "va_arg";
-            array_push(fn_decl->args, arg);
-        } else if (token.type == TOKEN_IDENTIFIER) {
-            arg.name = token;
-            parser_expect(parser, TOKEN_COLON, "Expected `:`");
-            arg.type = parser_expect(parser, TOKEN_IDENTIFIER, "Expected type").value;
-            array_push(fn_decl->args, arg);
-        } else {
-            error_msg(token.loc, ERROR_FATAL, "expected id");
-            exit(1);
         }
+        array_push(fn_decl->args, arg);
     }
     parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
 
@@ -598,7 +585,7 @@ For_Stmt *parse_for_stmt(Parser *parser) {
     for_stmt->range.start = start;
     for_stmt->range.end = end;
     for_stmt->body.data = NULL;
-    for_stmt->var = (Var){.type = "i32", .name = name};
+    for_stmt->var = name;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
         array_push(for_stmt->body, parse_child_stmt(parser));

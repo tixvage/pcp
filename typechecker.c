@@ -84,7 +84,8 @@ void check_functions(Parsed_File *decls) {
         Var_Array vars = {0};
         for (int j = 0; j < decls->fn_decls.data[i]->args.len; j++) {
             Var var = decls->fn_decls.data[i]->args.data[j];
-            array_push(vars, check_var(var));
+            Checked_Var cv = {var.name, check_type(var.type)};
+            array_push(vars, cv);
         }
         if (!possible_decl->eextern) {
             Var_Array vars_copy = {0};
@@ -192,13 +193,13 @@ Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn
 Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
     Checked_For_Stmt *res = calloc(1, sizeof(Checked_For_Stmt));
 
-    Checked_Var possible_var = var_exist(vars_copy, for_stmt->var.name.value);
+    Checked_Var possible_var = var_exist(vars_copy, for_stmt->var.value);
     if (possible_var.type.str) {
-        error_msg(for_stmt->var.name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
+        error_msg(for_stmt->var.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
         error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
         exit(1);
     }
-    res->var = check_var(for_stmt->var);
+    res->var = (Checked_Var){for_stmt->var, type_exist("i32")};
 
     res->range.start = check_expr(for_stmt->range.start, vars_copy, fn, deep, type_exist("i32"));
     res->range.end = check_expr(for_stmt->range.end, vars_copy, fn, deep, type_exist("i32"));
@@ -337,6 +338,9 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             Type type = un_op_expr->type;
             if (expr->as.un_op->op.type == TOKEN_CARET) {
                 type.flags |= TYPE_POINTER;
+            }
+            if (expr->as.un_op->op.type == TOKEN_ASTERISK) {
+                type.flags &= ~TYPE_POINTER;
             }
             res->type = type;
             res->kind = CHECKED_EXPR_UN_OP;
@@ -574,18 +578,6 @@ Type type_exist(char *str) {
     }
 
     return (Type){0};
-}
-
-Checked_Var check_var(Var var) {
-    Checked_Var res = {0};
-    res.name = var.name;
-    Type possible_type = type_exist(var.type);
-    if (!possible_type.str) {
-        error_msg(var.name.loc, ERROR_FATAL, "type `%s` is not declared", var.type);
-        exit(1);
-    }
-    res.type = possible_type;
-    return res;
 }
 
 Type check_type(Parser_Type t) {

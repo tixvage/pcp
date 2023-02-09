@@ -10,8 +10,13 @@ typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct Identifier Identifier;
 
+typedef struct Parser_Type {
+    Identifier *id;
+    bool pointer;
+} Parser_Type;
+
 typedef struct Var {
-    char *type;
+    Parser_Type type;
     Token name;
 } Var;
 
@@ -50,11 +55,6 @@ struct Identifier {
     struct Identifier *child;
 };
 
-typedef struct Parser_Type {
-    Identifier *id;
-    bool pointer;
-} Parser_Type;
-
 typedef struct Struct_Construct_Arg {
     Token name;
     Expr *expr;
@@ -87,7 +87,7 @@ typedef struct If_Stmt {
 } If_Stmt;
 
 typedef struct For_Stmt {
-    Var var;
+    Token var;
     struct {
         Expr *start;
         Expr *end;
