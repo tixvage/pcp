@@ -294,9 +294,9 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
 Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep) {
     Checked_Var_Assign *res = calloc(1, sizeof(Checked_Var_Assign));
 
-    Checked_Identifier *var = check_identifier(var_assign->var, var_assign->loc, vars_copy);
+    Checked_Expr *var = check_expr(var_assign->var, vars_copy, fn, deep, type_exist("auto"));
     res->var = var;
-    Type type = get_actual_id_type(var);
+    Type type = var->type;
     Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, type);
     if (!type_eq(expr->type, type)) {
         error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(type), Type_Arg(expr->type));
@@ -313,7 +313,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
     switch (expr->kind) {
         case EXPR_NUMBER: {
             Type type = type_exist("i32");
-            if ((wanted_type.flags & TYPE_NUMBER) != 0) {
+            if ((wanted_type.flags & TYPE_NUMBER) != 0 && (wanted_type.flags & TYPE_POINTER) == 0) {
                 type = wanted_type;
             }
             res->type = type;
@@ -406,9 +406,9 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->as.func_call = func_call;
         } break;
         case EXPR_CAST: {
-            Type type = type_exist(expr->as.cast->type.value);
+            Type type = check_type(expr->as.cast->type);
             if (!type.str) {
-                error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type.value);
+                error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type.id->name);
                 exit(1);
             }
             Type convert = type_exist("auto");

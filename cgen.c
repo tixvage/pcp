@@ -176,17 +176,7 @@ void cgen_var_declaration(Checked_Var_Decl *var_decl) {
 }
 
 void cgen_var_assignment(Checked_Var_Assign *var_assign) {
-    fprintf(f, "%s", var_assign->var->name);
-    Checked_Identifier *root = var_assign->var;
-    while (root->child) {
-        if ((root->type.flags & TYPE_POINTER) != 0) {
-            fprintf(f, "->");
-        } else {
-            fprintf(f, ".");
-        }
-        fprintf(f, "%s", root->child->name);
-        root = root->child;
-    }
+    cgen_expr(var_assign->var);
     fprintf(f, " = ");
     cgen_expr(var_assign->expr);
     fprintf(f, ";\n");

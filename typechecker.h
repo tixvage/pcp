@@ -85,7 +85,7 @@ typedef struct Checked_Func_Call {
 } Checked_Func_Call;
 
 typedef struct Checked_Var_Assign {
-    Checked_Identifier *var;
+    Checked_Expr *var;
     Checked_Expr *expr;
 } Checked_Var_Assign;
 

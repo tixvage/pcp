@@ -28,7 +28,7 @@ typedef struct Scope {
 typedef struct Cast {
     Expr *expr;
     Token op;
-    Token type;
+    Parser_Type type;
 } Cast;
 
 typedef struct Bin_Op {
@@ -77,7 +77,7 @@ typedef struct Func_Call {
 
 typedef struct Var_Assign {
     Loc loc;
-    Identifier *var;
+    Expr *var;
     Expr *expr;
 } Var_Assign;
 

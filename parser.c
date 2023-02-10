@@ -132,12 +132,7 @@ Stmt parse_child_stmt(Parser *parser) {
         } break;
         case TOKEN_IDENTIFIER: {
             Token peek_tk = parser_peek_token(parser);
-            if (peek_tk.type == TOKEN_EQUAL) {
-                return (Stmt){
-                    .kind = STMT_VAR_ASSIGN,
-                    .as = {.var_assign = parse_var_assign(parser)},
-                };
-            } else if (peek_tk.type == TOKEN_COLON || peek_tk.type == TOKEN_COLON_EQUAL) {
+            if (peek_tk.type == TOKEN_COLON || peek_tk.type == TOKEN_COLON_EQUAL) {
                 return (Stmt){
                     .kind = STMT_VAR_DECL,
                     .as = {.var_decl = parse_var_decl(parser)},
@@ -157,12 +152,20 @@ Stmt parse_child_stmt(Parser *parser) {
     if (stmt.as.expr == NULL) {
         stmt.kind = STMT_EMPTY;
     } else {
-        if (stmt.as.expr->kind == EXPR_IDENTIFIER && parser->current_token.type == TOKEN_EQUAL) {
+        if (parser->current_token.type == TOKEN_EQUAL) {
+            if (!(stmt.as.expr->kind == EXPR_IDENTIFIER || stmt.as.expr->kind == EXPR_UN_OP)) {
+                error_msg(stmt.as.expr->loc, ERROR_FATAL, "expected lvalue");
+                exit(1);
+            }
+            if (stmt.as.expr->kind == EXPR_UN_OP && stmt.as.expr->as.un_op->op.type != TOKEN_ASTERISK) {
+                error_msg(stmt.as.expr->loc, ERROR_FATAL, "expected `*` but got `%s`", token_type_to_str(stmt.as.expr->as.un_op->op));
+                exit(1);
+            }
             parser_eat(parser);
             Expr *expr = parse_expr(parser);
             parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
             Var_Assign *var_assign = malloc(sizeof(Var_Assign));
-            var_assign->var = stmt.as.expr->as.identifier;
+            var_assign->var = stmt.as.expr;
             var_assign->expr = expr;
             stmt.kind = STMT_VAR_ASSIGN;
             stmt.as.var_assign = var_assign;
@@ -191,6 +194,7 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->kind = EXPR_UN_OP;
             if ((un_op->op.type == TOKEN_CARET || un_op->op.type == TOKEN_ASTERISK) && un_op->expr->kind != EXPR_IDENTIFIER) {
                 error_msg(un_op->op.loc, ERROR_FATAL, "lvalue expected");
+                exit(1);
             }
             expr->as = (Expr_As){.un_op = un_op};
             expr->loc = un_op->op.loc;
@@ -335,7 +339,7 @@ Expr *parse_cast_expr(Parser *parser) {
     Expr *root = parse_primary_expr(parser);
     while (parser->current_token.type == TOKEN_KEYWORD_AS) {
         Token op = parser_eat(parser);
-        Token type = parser_expect(parser, TOKEN_IDENTIFIER, "expected type for casting");
+        Parser_Type type = parse_type(parser);
 
         Cast *cast = malloc(sizeof(Cast));
         cast->expr = root;
@@ -434,6 +438,7 @@ Fn_Decl *parse_fn_decl(Parser *parser) {
     fn_decl->args.len = 0;
     fn_decl->args.data = NULL;
     fn_decl->eextern = false;
+    fn_decl->has_va_arg = false;
 
     parser_eat(parser);
     Token name = parser_expect(parser, TOKEN_IDENTIFIER, "Expected id");
@@ -460,6 +465,7 @@ Fn_Decl *parse_extern_fn_decl(Parser *parser) {
     fn_decl->args.len = 0;
     fn_decl->args.data = NULL;
     fn_decl->eextern = true;
+    fn_decl->has_va_arg = false;
 
     parser_eat(parser);
     parser_expect(parser, TOKEN_KEYWORD_FN, "expected `fn` after `extern`");
@@ -482,7 +488,6 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
         return;
     }
 
-    bool has_va_arg = false;
     {
         Var first_arg = {0};
         Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
@@ -490,7 +495,7 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
         parser_expect(parser, TOKEN_COLON, "Expected `:`");
         first_arg.type = parse_type(parser);
         if (strcmp(first_arg.type.id->name, "va_arg") == 0) {
-            has_va_arg = true;
+            fn_decl->has_va_arg = true;
         }
         array_push(fn_decl->args, first_arg);
     }
@@ -508,13 +513,11 @@ void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
         parser_expect(parser, TOKEN_COLON, "Expected `:`");
         arg.type = parse_type(parser);
         if (strcmp(arg.type.id->name, "va_arg") == 0) {
-            has_va_arg = true;
+            fn_decl->has_va_arg = true;
         }
         array_push(fn_decl->args, arg);
     }
     parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
-
-    fn_decl->has_va_arg = has_va_arg;
 }
 
 Struct_Decl *parse_struct_decl(Parser *parser) {
@@ -623,25 +626,25 @@ While_Stmt *parse_while_stmt(Parser *parser) {
     return while_stmt;
 }
 
-Var_Assign *parse_var_assign(Parser *parser) {
-    Token tk = parser_eat(parser);
-    assert(tk.type == TOKEN_IDENTIFIER);
-    parser_expect(parser, TOKEN_EQUAL, "Expected `=`");
-
-    Expr *expr = parse_expr(parser);
-
-    Var_Assign *var_assign = malloc(sizeof(Var_Assign));
-    var_assign->loc = tk.loc;
-    var_assign->expr = expr;
-
-    Identifier *id = malloc(sizeof(Identifier));
-    id->name = tk.value;
-    id->child = NULL;
-    var_assign->var = id;
-
-    parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
-    return var_assign;
-}
+//Var_Assign *parse_var_assign(Parser *parser) {
+//    Token tk = parser_eat(parser);
+//    assert(tk.type == TOKEN_IDENTIFIER);
+//    parser_expect(parser, TOKEN_EQUAL, "Expected `=`");
+//
+//    Expr *expr = parse_expr(parser);
+//
+//    Var_Assign *var_assign = malloc(sizeof(Var_Assign));
+//    var_assign->loc = tk.loc;
+//    var_assign->expr = expr;
+//
+//    Identifier *id = malloc(sizeof(Identifier));
+//    id->name = tk.value;
+//    id->child = NULL;
+//    var_assign->var = id;
+//
+//    parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+//    return var_assign;
+//}
 
 Func_Call *parse_func_call(Parser *parser) {
     Token name = parser_eat(parser);
