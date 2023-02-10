@@ -359,6 +359,10 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 type.flags |= TYPE_POINTER;
             }
             if (expr->as.un_op->op.type == TOKEN_ASTERISK) {
+                if ((type.flags & TYPE_POINTER) == 0) {
+                    error_msg(expr->loc, ERROR_FATAL, "expected `*%s` but got `%s`", type.str, type.str);
+                    exit(1);
+                }
                 type.flags &= ~TYPE_POINTER;
             }
             res->type = type;
