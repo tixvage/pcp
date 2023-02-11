@@ -1,0 +1,6 @@
+:i exit_code 1
+:b stdout 0
+
+:b stderr 80
+tests/end_of_nonvoid_fn.pcp:1:4: error: `main` reaches end of non-void function
+

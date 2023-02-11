@@ -1,0 +1,6 @@
+fn main(): i32 {
+    i := 20;
+    b: u32 = i;
+
+    return 0;
+}

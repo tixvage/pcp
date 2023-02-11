@@ -1,0 +1,98 @@
+extern fn printf(fmt: cstr, args: va_arg): i32;
+extern fn malloc(size: u64): *void;
+extern fn calloc(len: u64, size: u64): *void;
+
+fn print_person(p: Person): void {
+    printf("p = %d, %s\n", *p.age.i, p.name);
+}
+
+fn change_person_name_ptr(p: *Person, str: cstr): void {
+    p.name = str;
+}
+
+fn change_person_name_copy(p: Person, str: cstr): void {
+    p.name = str;
+}
+
+struct Hello {
+    i: *i32;
+}
+
+struct Person {
+    age: *Hello;
+    name: cstr = "sussy";
+}
+
+fn person_demo(): void {
+    i := 20;
+
+    age := {
+        i = ^i,
+    } as Hello;
+
+    p := {
+        age = ^age,
+    } as Person;
+
+    if ^i == p.age.i {
+        printf("%p, %d\n", p.age.i, *p.age.i);
+    }
+
+    while i != 30 {
+        i = i + 1;
+        print_person(p);
+    }
+
+    print_person(p);
+    change_person_name_ptr(^p, "mad");
+    print_person(p);
+    change_person_name_copy(p, "baka");
+    print_person(p);
+}
+
+fn malloc_demo(): void {
+    a := malloc(4) as *i32;
+    *a = 50;
+    printf("%d, %p\n", *a, a);
+    b := *a;
+    b = 20;
+    printf("%d, %p\n", *a, a);
+    printf("%d, %p\n", b, ^b);
+}
+
+fn big_malloc_demo(): void {
+    a := malloc(-1);
+    printf("pointer = %p\n", a);
+    if a == 0 as *void {
+        printf("allocation failed\n");
+    }
+}
+
+fn risky_person_demo(): void {
+    i := 20;
+
+    age := {
+        i = ^i,
+    } as Hello;
+
+    p := {
+        age = ^age,
+    } as Person;
+    print_person(p);
+    i = 5;
+    print_person(p);
+    *p.age.i = 10;
+    print_person(p);
+}
+
+fn main(): i32 {
+    printf("malloc demo:\n");
+    malloc_demo();
+    printf("\nbig malloc demo:\n");
+    big_malloc_demo();
+    printf("\nperson demo:\n");
+    person_demo();
+    printf("\nrisky person demo:\n");
+    risky_person_demo();
+    return 0;
+}

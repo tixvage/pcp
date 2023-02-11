@@ -1,0 +1,10 @@
+extern fn printf(fmt: cstr, args: va_arg): i32;
+
+fn main(): i32 {
+    i := 5;
+    b := ^i;
+
+    printf("%d == %d\n", i, *b);
+
+    return 0;
+}

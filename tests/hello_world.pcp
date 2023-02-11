@@ -1,0 +1,7 @@
+extern fn printf(fmt: cstr, args: va_arg): i32;
+
+fn main(): i32 {
+    hello_world := "Hello, World";
+    printf("%s\n", hello_world);
+    return 0;
+}

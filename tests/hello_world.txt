@@ -1,0 +1,6 @@
+:i exit_code 0
+:b stdout 13
+Hello, World
+
+:b stderr 0
+
