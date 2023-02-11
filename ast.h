@@ -50,6 +50,10 @@ typedef struct String {
     char *value;
 } String;
 
+typedef struct Boolean {
+    bool value;
+} Boolean;
+
 struct Identifier {
     char *name;
     struct Identifier *child;
@@ -137,6 +141,7 @@ typedef enum Expr_Kind {
     EXPR_INVALID,
     EXPR_NUMBER,
     EXPR_STRING,
+    EXPR_BOOLEAN,
     EXPR_IDENTIFIER,
     EXPR_FUNC_CALL,
     EXPR_BIN_OP,
@@ -148,6 +153,7 @@ typedef enum Expr_Kind {
 typedef union Expr_As {
     Number *number;
     String *string;
+    Boolean *boolean;
     Identifier *identifier;
     Func_Call *func_call;
     Bin_Op *bin_op;

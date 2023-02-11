@@ -184,13 +184,16 @@ void cgen_var_assignment(Checked_Var_Assign *var_assign) {
 
 void cgen_expr(Checked_Expr *expr) {
     switch (expr->kind) {
-        case EXPR_NUMBER: {
+        case CHECKED_EXPR_NUMBER: {
             fprintf(f, "%d", expr->as.number->value);
         } break;
-        case EXPR_STRING: {
+        case CHECKED_EXPR_STRING: {
             fprintf(f, "\"%s\"", expr->as.string->value);
         } break;
-        case EXPR_IDENTIFIER: {
+        case CHECKED_EXPR_BOOLEAN: {
+            fprintf(f, "%s", expr->as.boolean->value ? "true" : "false");
+        } break;
+        case CHECKED_EXPR_IDENTIFIER: {
             fprintf(f, "%s", expr->as.identifier->name);
             Checked_Identifier *root = expr->as.identifier;
             while (root->child) {
@@ -203,12 +206,12 @@ void cgen_expr(Checked_Expr *expr) {
                 root = root->child;
             }
         } break;
-        case EXPR_BIN_OP: {
+        case CHECKED_EXPR_BIN_OP: {
             cgen_expr(expr->as.bin_op->left);
             fprintf(f, " %s ", expr->as.bin_op->op.value);
             cgen_expr(expr->as.bin_op->right);
         } break;
-        case EXPR_UN_OP: {
+        case CHECKED_EXPR_UN_OP: {
             if (expr->as.un_op->op.type == TOKEN_CARET) {
                 fprintf(f, "&(");
             } else {
@@ -217,7 +220,7 @@ void cgen_expr(Checked_Expr *expr) {
             cgen_expr(expr->as.un_op->expr);
             fprintf(f, ")");
         } break;
-        case EXPR_FUNC_CALL: {
+        case CHECKED_EXPR_FUNC_CALL: {
             Checked_Func_Call *func_call = expr->as.func_call;
             fprintf(f, "%s(", func_call->name);
             if (func_call->args.data != NULL) {
@@ -231,14 +234,14 @@ void cgen_expr(Checked_Expr *expr) {
             }
             fprintf(f, ")");
         } break;
-        case EXPR_CAST: {
+        case CHECKED_EXPR_CAST: {
             fprintf(f, "(");
             cgen_type(expr->as.cast->type);
             fprintf(f, ")(");
             cgen_expr(expr->as.cast->expr);
             fprintf(f, ")");
         } break;
-        case EXPR_STRUCT_CONSTRUCT: {
+        case CHECKED_EXPR_STRUCT_CONSTRUCT: {
             fprintf(f, "(%s){ ", expr->as.struct_construct->type.str);
             for (int i = 0; i < expr->as.struct_construct->args.len; i++) {
                 Checked_Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];

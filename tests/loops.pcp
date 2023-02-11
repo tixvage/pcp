@@ -1,0 +1,15 @@
+extern fn printf(fmt: cstr, args: va_arg): i32;
+
+fn main(): i32 {
+    for i in 0..20 {
+        a := false;
+        a = i % 2 == 0;
+        if a {
+            if true {
+                while false {}
+                printf("%d ", i);
+            }
+        }
+    }
+    return 0;
+}

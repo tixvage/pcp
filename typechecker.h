@@ -141,6 +141,7 @@ typedef enum Checked_Expr_Kind {
     CHECKED_EXPR_INVALID,
     CHECKED_EXPR_NUMBER,
     CHECKED_EXPR_STRING,
+    CHECKED_EXPR_BOOLEAN,
     CHECKED_EXPR_IDENTIFIER,
     CHECKED_EXPR_FUNC_CALL,
     CHECKED_EXPR_BIN_OP,
@@ -152,6 +153,7 @@ typedef enum Checked_Expr_Kind {
 typedef union Checked_Expr_As {
     Number *number;
     String *string;
+    Boolean *boolean;
     Checked_Identifier *identifier;
     Checked_Func_Call *func_call;
     Checked_Bin_Op *bin_op;

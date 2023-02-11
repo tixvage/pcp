@@ -200,6 +200,17 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->loc = un_op->op.loc;
             return expr;
         } break;
+        case TOKEN_KEYWORD_FALSE:
+        case TOKEN_KEYWORD_TRUE: {
+            Token as_token = parser_eat(parser);
+            Boolean *boolean = malloc(sizeof(Boolean));
+            boolean->value = as_token.type == TOKEN_KEYWORD_TRUE ? true : false;
+            Expr *expr = malloc(sizeof(Expr));
+            expr->kind = EXPR_BOOLEAN;
+            expr->as = (Expr_As){.boolean = boolean};
+            expr->loc = as_token.loc;
+            return expr;
+        } break;
         case TOKEN_IDENTIFIER: {
             Token peek_tk = parser_peek_token(parser);
             if (peek_tk.type == TOKEN_LPAREN) {
@@ -577,6 +588,7 @@ If_Stmt *parse_if_stmt(Parser *parser) {
     If_Stmt *if_stmt = malloc(sizeof(If_Stmt));
     if_stmt->expr = expr;
     if_stmt->body.data = NULL;
+    if_stmt->body.len = 0;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
         array_push(if_stmt->body, parse_child_stmt(parser));
@@ -599,6 +611,7 @@ For_Stmt *parse_for_stmt(Parser *parser) {
     for_stmt->range.start = start;
     for_stmt->range.end = end;
     for_stmt->body.data = NULL;
+    for_stmt->body.len = 0;
     for_stmt->var = name;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
@@ -617,6 +630,7 @@ While_Stmt *parse_while_stmt(Parser *parser) {
     While_Stmt *while_stmt = malloc(sizeof(While_Stmt));
     while_stmt->expr = expr;
     while_stmt->body.data = NULL;
+    while_stmt->body.len = 0;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
         array_push(while_stmt->body, parse_child_stmt(parser));

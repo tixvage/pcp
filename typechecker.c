@@ -231,7 +231,7 @@ Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checke
 
     Var_Array for_vars = {0};
     array_copy(for_vars, vars_copy);
-    array_push(for_vars, possible_var);
+    array_push(for_vars, res->var);
     res->body = check_scope(for_vars, for_stmt->body, fn, deep);
 
     return res;
@@ -324,6 +324,11 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->type = type_exist("cstr");
             res->kind = CHECKED_EXPR_STRING;
             res->as.string = expr->as.string;
+        } break;
+        case EXPR_BOOLEAN: {
+            res->type = type_exist("bool");
+            res->kind = CHECKED_EXPR_BOOLEAN;
+            res->as.boolean = expr->as.boolean;
         } break;
         case EXPR_IDENTIFIER: {
             Checked_Identifier *id = check_identifier(expr->as.identifier, expr->loc, vars);
