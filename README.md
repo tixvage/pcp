@@ -38,10 +38,10 @@ See [demo.pcp](./demo.pcp)
 
 ## Milestones
 
-- [] Try To Solve Some Common [C](https://en.wikipedia.org/wiki/C_(programming_language)) Problems
-- [] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers))
-- [] [JIT Compiler](https://en.wikipedia.org/wiki/Just-in-time_compilation)
-- [] Better Compiler Errors
+- [ ] Try To Solve Some Common [C](https://en.wikipedia.org/wiki/C_(programming_language)) Problems
+- [ ] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers))
+- [ ] [JIT Compiler](https://en.wikipedia.org/wiki/Just-in-time_compilation)
+- [ ] Better Compiler Errors
 
 ## FAQ
 
