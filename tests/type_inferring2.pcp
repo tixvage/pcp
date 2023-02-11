@@ -1,0 +1,13 @@
+struct Dumb {
+    a: i32;
+    b: cstr = "hello";
+}
+
+fn dumber_fn(d: Dumb): void {}
+
+fn main(): i32 {
+    dumber_fn({
+        a = 20,
+    });
+    return 0;
+}

@@ -1,0 +1,7 @@
+:i exit_code 1
+:b stdout 0
+
+:b stderr 158
+tests/structs1.pcp:7:10: error: struct `Non_Default_Field` needs at least 2 fields but 0 given
+tests/structs1.pcp:1:8: note: `Non_Default_Field` defined here
+

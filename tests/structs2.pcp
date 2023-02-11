@@ -1,0 +1,11 @@
+struct With_Default_Field {
+    a: i32 = 20;
+    b: bool;
+}
+
+fn main(): i32 {
+    a := {
+        b = 0 == 0,
+    } as With_Default_Field;
+    return a.a;
+}

@@ -1,0 +1,5 @@
+:i exit_code 0
+:b stdout 0
+
+:b stderr 0
+

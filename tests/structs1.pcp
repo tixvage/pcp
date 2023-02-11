@@ -1,0 +1,9 @@
+struct Non_Default_Field {
+    a: i32;
+    b: bool;
+}
+
+fn main(): i32 {
+    a := {} as Non_Default_Field;
+    return 0;
+}

@@ -1,0 +1,6 @@
+:i exit_code 1
+:b stdout 0
+
+:b stderr 72
+tests/type_inferring1.pcp:6:5: error: type of `a` could not be inferred
+
