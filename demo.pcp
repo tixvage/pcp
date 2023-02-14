@@ -85,6 +85,15 @@ fn risky_person_demo(): void {
     print_person(p);
 }
 
+fn complex_types_demo(): void {
+    i := 20;
+    b := ^i;
+    c : **i32 = ^b;
+    d : [*i32; 2] = 0 as [*i32; 2];
+    e : [[*i32; 2]; 2] = 0 as [[*i32; 2]; 2];
+    printf("%d\n", **c);
+}
+
 fn main(): i32 {
     printf("malloc demo:\n");
     malloc_demo();
@@ -94,5 +103,7 @@ fn main(): i32 {
     person_demo();
     printf("\nrisky person demo:\n");
     risky_person_demo();
+    printf("\ncomplex types demo:\n");
+    complex_types_demo();
     return 0;
 }

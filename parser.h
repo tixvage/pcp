@@ -47,9 +47,8 @@ Return_Stmt *parse_return_stmt(Parser *parser);
 If_Stmt *parse_if_stmt(Parser *parser);
 For_Stmt *parse_for_stmt(Parser *parser);
 While_Stmt *parse_while_stmt(Parser *parser);
-Var_Assign *parse_var_assign(Parser *parser);
 Func_Call *parse_func_call(Parser *parser);
-Parser_Type parse_type(Parser *parser);
+Parser_Type *parse_type(Parser *parser);
 void parse_func_call_args(Parser *parser, Func_Call *func_call);
 void parse_file(Parser *parser);
 

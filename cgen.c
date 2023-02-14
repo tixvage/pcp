@@ -24,9 +24,10 @@ void cgen_prepare(void) {
     fprintf(f, "\n");
 }
 
-void cgen_type(Type type) {
-    fprintf(f, "%s", type.str);
-    if ((type.flags & TYPE_POINTER) != 0) {
+void cgen_type(Type *type) {
+    fprintf(f, "%s", type->str);
+    while (type->flag == TYPE_POINTER || type->flag == TYPE_ARRAY) {
+        type = type->flag == TYPE_POINTER ? type->base.pointer : type->base.array->base;
         fprintf(f, "*");
     }
 }
@@ -61,14 +62,14 @@ void cgen_function(Checked_Fn_Decl *fn) {
         fprintf(f, "void");
     } else {
         Checked_Var first_arg = fn->args.data[0];
-        if (strcmp(first_arg.type.str, "va_arg") != 0) {
+        if (strcmp(first_arg.type->str, "va_arg") != 0) {
             cgen_type(first_arg.type);
             fprintf(f, " %s", first_arg.name.value);
         } else {
             fprintf(f, "...");
         }
         for (int i = 1; i < fn->args.len; i++) {
-            if (strcmp(fn->args.data[i].type.str, "va_arg") != 0) {
+            if (strcmp(fn->args.data[i].type->str, "va_arg") != 0) {
                 fprintf(f, ", ");
                 cgen_type(fn->args.data[i].type);
                 fprintf(f, " %s", fn->args.data[i].name.value);
@@ -197,7 +198,7 @@ void cgen_expr(Checked_Expr *expr) {
             fprintf(f, "%s", expr->as.identifier->name);
             Checked_Identifier *root = expr->as.identifier;
             while (root->child) {
-                if ((root->type.flags & TYPE_POINTER) != 0) {
+                if (root->type->flag == TYPE_POINTER) {
                     fprintf(f, "->");
                 } else {
                     fprintf(f, ".");
@@ -242,7 +243,7 @@ void cgen_expr(Checked_Expr *expr) {
             fprintf(f, ")");
         } break;
         case CHECKED_EXPR_STRUCT_CONSTRUCT: {
-            fprintf(f, "(%s){ ", expr->as.struct_construct->type.str);
+            fprintf(f, "(%s){ ", expr->as.struct_construct->type->str);
             for (int i = 0; i < expr->as.struct_construct->args.len; i++) {
                 Checked_Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];
                 fprintf(f, ".%s = ", arg.name.value);

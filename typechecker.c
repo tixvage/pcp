@@ -10,20 +10,20 @@
 
 Checked_File info = {0};
 
-const Type builtin_types[] = {
-    {"void", TYPE_VOID},
-    {"i8", TYPE_NUMBER},
-    {"i16", TYPE_NUMBER},
-    {"i32", TYPE_NUMBER},
-    {"i64", TYPE_NUMBER},
-    {"u8", TYPE_NUMBER},
-    {"u16", TYPE_NUMBER},
-    {"u32", TYPE_NUMBER},
-    {"u64", TYPE_NUMBER},
-    {"cstr", TYPE_STRING},
-    {"bool", TYPE_BOOLEAN},
-    {"auto", TYPE_NEEDS_INFERRING},
-    {"va_arg", TYPE_NEEDS_INFERRING},
+Type builtin_types[] = {
+    {"void", TYPE_VOID, {NULL}},
+    {"i8", TYPE_NUMBER, {NULL}},
+    {"i16", TYPE_NUMBER, {NULL}},
+    {"i32", TYPE_NUMBER, {NULL}},
+    {"i64", TYPE_NUMBER, {NULL}},
+    {"u8", TYPE_NUMBER, {NULL}},
+    {"u16", TYPE_NUMBER, {NULL}},
+    {"u32", TYPE_NUMBER, {NULL}},
+    {"u64", TYPE_NUMBER, {NULL}},
+    {"cstr", TYPE_STRING, {NULL}},
+    {"bool", TYPE_BOOLEAN, {NULL}},
+    {"auto", TYPE_NEEDS_INFERRING, {NULL}},
+    {"va_arg", TYPE_NEEDS_INFERRING, {NULL}},
 };
 
 Var_Array global_vars = {0};
@@ -45,7 +45,9 @@ void check_structs(Parsed_File *decls) {
         }
         possible_decl->name = decl->name;
         possible_decl->eextern = decl->eextern;
-        Type type = {decl->name.value, TYPE_STRUCT};
+        Type *type = calloc(1, sizeof(Type));
+        type->str = decl->name.value; 
+        type->flag = TYPE_STRUCT;
         array_push(info.types, type);
         array_push(info.structs, possible_decl);
     }
@@ -66,8 +68,8 @@ void check_functions(Parsed_File *decls) {
             error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
             exit(1);
         }
-        Type possible_type = check_type(decls->fn_decls.data[i]->return_type);
-        if (!possible_type.str) {
+        Type *possible_type = check_type(decls->fn_decls.data[i]->return_type);
+        if (!possible_type->str) {
             error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` has invalid return type", decls->fn_decls.data[i]->name.value);
             exit(1);
         }
@@ -173,7 +175,7 @@ Checked_Scope check_scope(Var_Array vars_copy, Scope scope, Checked_Fn_Decl *fn,
         array_push(res, checked_stmt);
     }
 
-    if (deep == 0 && !return_found && strcmp(fn->return_type.str, "void") != 0) {
+    if (deep == 0 && !return_found && strcmp(fn->return_type->str, "void") != 0) {
         error_msg(fn->name.loc, ERROR_FATAL, "`%s` reaches end of non-void function", fn->name.value);
         exit(1);
     }
@@ -185,7 +187,7 @@ Checked_If_Stmt *check_if_stmt(If_Stmt *if_stmt, Var_Array vars_copy, Checked_Fn
     Checked_If_Stmt *res = calloc(1, sizeof(Checked_If_Stmt));
 
     res->expr = check_expr(if_stmt->expr, vars_copy, fn, deep, type_exist("bool"));
-    if ((res->expr->type.flags & TYPE_BOOLEAN) == 0) {
+    if (res->expr->type->flag != TYPE_BOOLEAN) {
         error_msg(if_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `"Type_Fmt"`", Type_Arg(res->expr->type));
         exit(1);
     }
@@ -199,7 +201,7 @@ Checked_While_Stmt *check_while_stmt(While_Stmt *while_stmt, Var_Array vars_copy
     Checked_While_Stmt *res = calloc(1, sizeof(Checked_While_Stmt));
 
     res->expr = check_expr(while_stmt->expr, vars_copy, fn, deep, type_exist("bool"));
-    if ((res->expr->type.flags & TYPE_BOOLEAN) == 0) {
+    if (res->expr->type->flag != TYPE_BOOLEAN) {
         error_msg(while_stmt->expr->loc, ERROR_FATAL, "expected type `bool` for if statement but got `"Type_Fmt"`", Type_Arg(res->expr->type));
         exit(1);
     }
@@ -213,7 +215,7 @@ Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checke
     Checked_For_Stmt *res = calloc(1, sizeof(Checked_For_Stmt));
 
     Checked_Var possible_var = var_exist(vars_copy, for_stmt->var.value);
-    if (possible_var.type.str) {
+    if (possible_var.name.value) {
         error_msg(for_stmt->var.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
         error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
         exit(1);
@@ -222,9 +224,9 @@ Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checke
 
     res->range.start = check_expr(for_stmt->range.start, vars_copy, fn, deep, type_exist("i32"));
     res->range.end = check_expr(for_stmt->range.end, vars_copy, fn, deep, type_exist("i32"));
-    Type lhs = res->range.start->type;
-    Type rhs = res->range.end->type;
-    if ((lhs.flags & TYPE_NUMBER) == 0 || (rhs.flags & TYPE_NUMBER) == 0) {
+    Type *lhs = res->range.start->type;
+    Type *rhs = res->range.end->type;
+    if (lhs->flag != TYPE_NUMBER || rhs->flag != TYPE_NUMBER) {
         error_msg(for_stmt->range.start->loc, ERROR_FATAL, "range type must be `i32`");
         exit(1);
     }
@@ -254,15 +256,15 @@ Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn
     Checked_Var_Decl *res = calloc(1, sizeof(Checked_Var_Decl));
 
     Checked_Var possible_var = var_exist(*vars, var_decl->name.value);
-    if (possible_var.type.str) {
+    if (possible_var.name.value) {
         error_msg(var_decl->name.loc, ERROR_FATAL, "variable `%s` already exists in scope", possible_var.name.value);
         error_msg(possible_var.name.loc, ERROR_NOTE, "`%s` first defined here", possible_var.name.value);
         exit(1);
     }
     res->name = var_decl->name;
 
-    Type possible_var_type = check_type(var_decl->type);
-    if (!possible_var_type.str) {
+    Type *possible_var_type = check_type(var_decl->type);
+    if (!possible_var_type) {
         error_msg(var_decl->name.loc, ERROR_FATAL, "variable `%s` has invalid type", var_decl->name.value);
         exit(1);
     }
@@ -296,7 +298,7 @@ Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy
 
     Checked_Expr *var = check_expr(var_assign->var, vars_copy, fn, deep, type_exist("auto"));
     res->var = var;
-    Type type = var->type;
+    Type *type = var->type;
     Checked_Expr *expr = check_expr(var_assign->expr, vars_copy, fn, deep, type);
     if (!type_eq(expr->type, type)) {
         error_msg(var_assign->expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(type), Type_Arg(expr->type));
@@ -307,13 +309,13 @@ Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy
     return res;
 }
 
-Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int deep, Type wanted_type) {
+Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int deep, Type *wanted_type) {
     Checked_Expr *res = calloc(1, sizeof(Checked_Expr));
 
     switch (expr->kind) {
         case EXPR_NUMBER: {
-            Type type = type_exist("i32");
-            if ((wanted_type.flags & TYPE_NUMBER) != 0 && (wanted_type.flags & TYPE_POINTER) == 0) {
+            Type *type = type_exist("i32");
+            if (wanted_type->flag == TYPE_NUMBER) {
                 type = wanted_type;
             }
             res->type = type;
@@ -340,7 +342,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
         case EXPR_BIN_OP: {
             Checked_Expr *left = check_expr(expr->as.bin_op->left, vars, fn, deep, wanted_type);
             Checked_Expr *right = check_expr(expr->as.bin_op->right, vars, fn, deep, wanted_type);
-            Type type = left->type;
+            Type *type = left->type;
 
             if (!type_eq(left->type, right->type)) {
                 error_msg(expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(left->type), Type_Arg(right->type));
@@ -359,16 +361,20 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
         } break;
         case EXPR_UN_OP: {
             Checked_Expr *un_op_expr = check_expr(expr->as.un_op->expr, vars, fn, deep, wanted_type);
-            Type type = un_op_expr->type;
+            Type *type = un_op_expr->type;
             if (expr->as.un_op->op.type == TOKEN_CARET) {
-                type.flags |= TYPE_POINTER;
+                Type *get_ptr = calloc(1, sizeof(Type));
+                get_ptr->flag = TYPE_POINTER;
+                get_ptr->str = type->str;
+                get_ptr->base.pointer = type;
+                type = get_ptr;
             }
             if (expr->as.un_op->op.type == TOKEN_ASTERISK) {
-                if ((type.flags & TYPE_POINTER) == 0) {
-                    error_msg(expr->loc, ERROR_FATAL, "expected `*%s` but got `%s`", type.str, type.str);
+                if (type->flag != TYPE_POINTER) {
+                    error_msg(expr->loc, ERROR_FATAL, "expected `*%s` but got `%s`", type->str, type->str);
                     exit(1);
                 }
-                type.flags &= ~TYPE_POINTER;
+                type = type->base.pointer;
             }
             res->type = type;
             res->kind = CHECKED_EXPR_UN_OP;
@@ -399,7 +405,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     exit(1);
                 }
                 for (int i = 0; i < possible_fn->args.len; i++) {
-                    Type expected_type = possible_fn->args.data[i].type;
+                    Type *expected_type = possible_fn->args.data[i].type;
                     Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i], vars, fn, deep, expected_type);
                     if (!type_eq(expected_type, given_expr->type)) {
                         error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
@@ -415,12 +421,12 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->as.func_call = func_call;
         } break;
         case EXPR_CAST: {
-            Type type = check_type(expr->as.cast->type);
-            if (!type.str) {
-                error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type.id->name);
+            Type *type = check_type(expr->as.cast->type);
+            if (!type) {
+                error_msg(expr->loc, ERROR_FATAL, "use of undeclared `%s` type", expr->as.cast->type->id);
                 exit(1);
             }
-            Type convert = type_exist("auto");
+            Type *convert = type_exist("auto");
             if (expr->as.cast->expr->kind == EXPR_STRUCT_CONSTRUCT) {
                 convert = type;
             }
@@ -433,18 +439,18 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->as.cast = cast;
         } break;
         case EXPR_STRUCT_CONSTRUCT: {
-            Checked_Struct_Decl *sd = struct_exist(wanted_type.str);
+            Checked_Struct_Decl *sd = struct_exist(wanted_type->str);
             Struct_Construct *sc = expr->as.struct_construct;
             Checked_Struct_Construct *csc = calloc(1, sizeof(Checked_Struct_Construct));
 
             if (!sd) {
-                if ((wanted_type.flags & TYPE_NEEDS_INFERRING) != 0) {
+                if (wanted_type->flag == TYPE_NEEDS_INFERRING) {
                     res->type = wanted_type;
                     res->kind = CHECKED_EXPR_STRUCT_CONSTRUCT;
                     res->as.struct_construct = csc;
                     return res;
                 } else {
-                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type.str);
+                    error_msg(expr->loc, ERROR_FATAL, "struct `%s` could not found", wanted_type->str);
                     exit(1);
                 }
             }
@@ -496,7 +502,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 bool found = false;
                 for (int j = 0; j < sd->vars.len; j++) {
                     if (strcmp(sd->vars.data[j]->name.value, sc->args.data[i].name.value) == 0) {
-                        Type expected_type = sd->vars.data[j]->type;
+                        Type *expected_type = sd->vars.data[j]->type;
                         Checked_Expr *given_expr = check_expr(sc->args.data[i].expr, vars, fn, deep, expected_type);
                         if (!type_eq(expected_type, given_expr->type)) {
                             error_msg(expr->loc, ERROR_FATAL, "fields of `%s` struct are incorrect", sd->name.value);
@@ -532,8 +538,8 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
 }
 
 Checked_Identifier *check_identifier(Identifier *identifier, Loc loc, Var_Array vars) {
-    Type type = var_exist(vars, identifier->name).type;
-    if (!type.str) {
+    Type *type = var_exist(vars, identifier->name).type;
+    if (!type) {
         error_msg(loc, ERROR_FATAL, "variable `%s` could not found in scope", identifier->name);
         exit(1);
     }
@@ -546,9 +552,9 @@ Checked_Identifier *check_identifier(Identifier *identifier, Loc loc, Var_Array 
 
     while (root->child) {
         root = root->child;
-        Checked_Struct_Decl *possible_struct = struct_exist(type.str);
+        Checked_Struct_Decl *possible_struct = struct_exist(type->str);
         if (!possible_struct) {
-            error_msg(loc, ERROR_FATAL, "type `%s` does not have any fields", type.str);
+            error_msg(loc, ERROR_FATAL, "type `%s` does not have any fields", type->str);
             exit(1);
         }
         Checked_Var_Decl *possible_var = struct_var_exist(possible_struct, root->name);
@@ -586,8 +592,8 @@ Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name) {
     return NULL;
 }
 
-Type get_actual_id_type(Checked_Identifier *id) {
-    Type type = id->type;
+Type *get_actual_id_type(Checked_Identifier *id) {
+    Type *type = id->type;
     Checked_Identifier *ptr = id;
 
     while (ptr->child) {
@@ -598,34 +604,65 @@ Type get_actual_id_type(Checked_Identifier *id) {
     return type;
 }
 
-Type type_exist(char *str) {
+Type *type_exist(char *str) {
     for (int i = 0; i < info.types.len; i++) {
-        if (str && strcmp(info.types.data[i].str, str) == 0) {
+        if (str && strcmp(info.types.data[i]->str, str) == 0) {
             return info.types.data[i];
         }
     }
 
-    return (Type){0};
+    return NULL;
 }
 
-Type check_type(Parser_Type t) {
-    if (!t.id) {
+Type *check_type(Parser_Type *t) {
+    if (!t) {
         return type_exist("auto");
     }
-    Type possible_type = type_exist(t.id->name);
-    if (t.pointer) {
-        possible_type.flags |= TYPE_POINTER;
+
+    Type *possible_type = type_exist(t->id);
+    Type *res = calloc(1, sizeof(Type));
+    //TODO: this will cause issues related to typedefs
+    memcpy(res, possible_type, sizeof(Type));
+
+    if (t->type == BASIC_POINTER) {
+        res->base.pointer = check_type(t->base);
+        res->flag = TYPE_POINTER;
+    } else if (t->type == BASIC_ARRAY) {
+        Array *array = calloc(1, sizeof(Array));
+        *array = (Array){check_type(t->base), t->len};
+        res->base.array = array;
+        res->flag = TYPE_ARRAY;
     }
 
-    return possible_type;
+    return res;
 }
 
-bool type_eq(Type a, Type b) {
-    return (strcmp(a.str, b.str) == 0) && a.flags == b.flags;
+bool type_eq(Type *a, Type *b) {
+    if (a->flag != b->flag) {
+        return false;
+    }
+
+    if (a->flag == TYPE_STRUCT || a->flag == TYPE_NUMBER) {
+        return strcmp(a->str, b->str) == 0;
+    }
+
+    if (a->flag == TYPE_STRING || a->flag == TYPE_BOOLEAN || a->flag == TYPE_VOID || a->flag == TYPE_NEEDS_INFERRING) {
+        return true;
+    }
+
+    if (a->flag == TYPE_POINTER) {
+        return type_eq(a->base.pointer, b->base.pointer);
+    }
+
+    if (a->flag == TYPE_ARRAY) {
+        return a->base.array->len == b->base.array->len && type_eq(a->base.array->base, b->base.array->base);
+    }
+
+    return false;
 }
 
 Checked_File typechecker_check(Parsed_File *decls) {
-    array_append(info.types, builtin_types, sizeof(builtin_types)/sizeof(builtin_types[0]));
+    array_append(info.types, &builtin_types, sizeof(builtin_types)/sizeof(builtin_types[0]));
     check_structs(decls);
     check_top_assignments(decls);
     check_functions(decls);

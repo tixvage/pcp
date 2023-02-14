@@ -10,13 +10,21 @@ typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct Identifier Identifier;
 
+typedef enum Parser_Type_Basic {
+    BASIC_BASE,
+    BASIC_POINTER,
+    BASIC_ARRAY,
+} Parser_Type_Basic;
+
 typedef struct Parser_Type {
-    Identifier *id;
-    bool pointer;
+    char *id;
+    int len;
+    Parser_Type_Basic type;
+    struct Parser_Type *base;
 } Parser_Type;
 
 typedef struct Var {
-    Parser_Type type;
+    Parser_Type *type;
     Token name;
 } Var;
 
@@ -28,7 +36,7 @@ typedef struct Scope {
 typedef struct Cast {
     Expr *expr;
     Token op;
-    Parser_Type type;
+    Parser_Type *type;
 } Cast;
 
 typedef struct Bin_Op {
@@ -111,14 +119,14 @@ typedef struct Return_Stmt {
 typedef struct Var_Decl {
     bool constant;
     Token name;
-    Parser_Type type;
+    Parser_Type *type;
     Expr *value;
     bool zero_init;
 } Var_Decl;
 
 typedef struct Fn_Decl {
     Token name;
-    Parser_Type return_type;
+    Parser_Type *return_type;
     bool eextern;
     bool has_va_arg;
     Scope body;

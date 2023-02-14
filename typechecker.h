@@ -6,29 +6,41 @@
 
 typedef struct Checked_Stmt Checked_Stmt;
 typedef struct Checked_Expr Checked_Expr;
+typedef struct Type Type;
 
-typedef struct Type {
+typedef enum Type_Kind {
+    TYPE_NUMBER,
+    TYPE_STRING,
+    TYPE_BOOLEAN,
+    TYPE_VOID,
+    TYPE_NEEDS_INFERRING,
+    TYPE_STRUCT,
+    TYPE_POINTER,
+    TYPE_ARRAY,
+} Type_Kind;
+
+typedef struct Array {
+    Type *base;
+    int len;
+} Array;
+
+typedef union Type_As {
+    Type *pointer;
+    Array *array;
+} Type_As;
+
+struct Type {
     char *str;
-    int flags;
-} Type;
+    Type_Kind flag;
+    Type_As base;
+};
 
-#define Type_Fmt "%c%s"
-#define Type_Arg(tp) (tp.flags & TYPE_POINTER) == 0 ? '\0' : '*', tp.str
-
-typedef enum Type_Flag {
-    TYPE_NUMBER = BIT(0),
-    TYPE_STRING = BIT(1),
-    TYPE_BOOLEAN = BIT(2),
-    TYPE_USER_DEFINED = BIT(3),
-    TYPE_VOID = BIT(4),
-    TYPE_NEEDS_INFERRING = BIT(5),
-    TYPE_STRUCT = BIT(6) | TYPE_USER_DEFINED,
-    TYPE_POINTER = BIT(7),
-} Type_Flag;
+#define Type_Fmt "%s%s"
+#define Type_Arg(tp) tp->flag == TYPE_POINTER ? "*" : "", tp->str
 
 typedef struct Checked_Var {
     Token name;
-    Type type;
+    Type *type;
 } Checked_Var;
 
 typedef struct Var_Array {
@@ -54,12 +66,12 @@ typedef struct Checked_Un_Op {
 
 typedef struct Checked_Cast {
     Checked_Expr *expr;
-    Type type;
+    Type *type;
 } Checked_Cast;
 
 typedef struct Checked_Identifier {
     char *name;
-    Type type;
+    Type *type;
     struct Checked_Identifier *child;
 } Checked_Identifier;
 
@@ -73,7 +85,7 @@ typedef struct Checked_Struct_Construct {
         Checked_Struct_Construct_Arg *data;
         int len;
     } args;
-    Type type;
+    Type *type;
 } Checked_Struct_Construct;
 
 typedef struct Checked_Func_Call {
@@ -115,13 +127,13 @@ typedef struct Checked_Return_Stmt {
 typedef struct Checked_Var_Decl {
     Token name;
     Checked_Expr *value;
-    Type type;
+    Type *type;
     bool zero_init;
 } Checked_Var_Decl;
 
 typedef struct Checked_Fn_Decl {
     Token name;
-    Type return_type;
+    Type *return_type;
     bool eextern;
     bool has_va_arg;
     Checked_Scope body;
@@ -166,7 +178,7 @@ struct Checked_Expr {
     Checked_Expr_Kind kind;
     Checked_Expr_As as;
     Loc loc;
-    Type type;
+    Type *type;
 };
 
 typedef enum Checked_Stmt_Kind {
@@ -214,7 +226,7 @@ typedef struct Checked_File {
         int len;
     } top_assignments;
     struct {
-        Type *data;
+        Type **data;
         int len;
     } types;
 } Checked_File;
@@ -235,13 +247,13 @@ Checked_For_Stmt *check_for_stmt(For_Stmt *for_stmt, Var_Array vars_copy, Checke
 Checked_Return_Stmt *check_return_stmt(Return_Stmt *return_stmt, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
 Checked_Var_Decl *check_var_decl(Var_Decl *var_decl, Var_Array *vars, Checked_Fn_Decl *fn, int deep);
 Checked_Var_Assign *check_var_assign(Var_Assign *var_assign, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep);
-Checked_Expr *check_expr(Expr *expr, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep, Type wanted_type);
+Checked_Expr *check_expr(Expr *expr, Var_Array vars_copy, Checked_Fn_Decl *fn, int deep, Type *wanted_type);
 Checked_Identifier *check_identifier(Identifier *id, Loc loc, Var_Array vars_copy);
 Checked_Var var_exist(Var_Array vars, char *name);
 Checked_Var_Decl *struct_var_exist(Checked_Struct_Decl *sd, char *name);
-Type get_actual_id_type(Checked_Identifier *id);
-Type type_exist(char *str);
-Type check_type(Parser_Type t);
-bool type_eq(Type a, Type b);
+Type *get_actual_id_type(Checked_Identifier *id);
+Type *type_exist(char *str);
+Type *check_type(Parser_Type *t);
+bool type_eq(Type *a, Type *b);
 
 #endif
