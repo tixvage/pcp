@@ -313,6 +313,14 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
     Checked_Expr *res = calloc(1, sizeof(Checked_Expr));
 
     switch (expr->kind) {
+        case EXPR_NULL: {
+            Type *type = type_exist("auto");
+            if (wanted_type->flag == TYPE_POINTER || wanted_type->flag == TYPE_ARRAY) {
+                type = wanted_type;
+            }
+            res->type = type;
+            res->kind = CHECKED_EXPR_NULL;
+        } break;
         case EXPR_NUMBER: {
             Type *type = type_exist("i32");
             if (wanted_type->flag == TYPE_NUMBER) {
@@ -341,7 +349,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
         } break;
         case EXPR_BIN_OP: {
             Checked_Expr *left = check_expr(expr->as.bin_op->left, vars, fn, deep, wanted_type);
-            Checked_Expr *right = check_expr(expr->as.bin_op->right, vars, fn, deep, wanted_type);
+            Checked_Expr *right = check_expr(expr->as.bin_op->right, vars, fn, deep, left->type);
             Type *type = left->type;
 
             if (!type_eq(left->type, right->type)) {

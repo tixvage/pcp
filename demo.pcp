@@ -63,7 +63,7 @@ fn malloc_demo(): void {
 fn big_malloc_demo(): void {
     a := malloc(-1);
     printf("pointer = %p\n", a);
-    if a == 0 as *void {
+    if a == null {
         printf("allocation failed\n");
     }
 }
@@ -89,8 +89,8 @@ fn complex_types_demo(): void {
     i := 20;
     b := ^i;
     c : **i32 = ^b;
-    d : [*i32; 2] = 0 as [*i32; 2];
-    e : [[*i32; 2]; 2] = 0 as [[*i32; 2]; 2];
+    d : [*i32; 2] = null;
+    e : [[*i32; 2]; 2] = null;
     printf("%d\n", **c);
 }
 

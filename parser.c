@@ -214,6 +214,13 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->loc = as_token.loc;
             return expr;
         } break;
+        case TOKEN_KEYWORD_NULL: {
+            Token as_token = parser_eat(parser);
+            Expr *expr = malloc(sizeof(Expr));
+            expr->kind = EXPR_NULL;
+            expr->loc = as_token.loc;
+            return expr;
+        } break;
         case TOKEN_IDENTIFIER: {
             Token peek_tk = parser_peek_token(parser);
             if (peek_tk.type == TOKEN_LPAREN) {

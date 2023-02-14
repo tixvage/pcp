@@ -151,6 +151,7 @@ typedef struct Checked_Struct_Decl {
 
 typedef enum Checked_Expr_Kind {
     CHECKED_EXPR_INVALID,
+    CHECKED_EXPR_NULL,
     CHECKED_EXPR_NUMBER,
     CHECKED_EXPR_STRING,
     CHECKED_EXPR_BOOLEAN,

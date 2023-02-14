@@ -2,7 +2,7 @@ if exists("b:current_syntax")
   finish
 endif
 
-syntax keyword pcpKeywords if while const extern fn struct as return true false
+syntax keyword pcpKeywords if while const extern fn struct as return true false null
 syntax region pcpComment start="//" end="$"
 syntax region pcpString start=/\v"/ skip=/\v\\./ end=/\v"/ contains=pcpEscapes
 syntax match pcpEscapes display contained "\\[nrt\"']"

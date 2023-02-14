@@ -51,6 +51,7 @@ char* KEYS[COUNT_TOKEN] = {
     [TOKEN_KEYWORD_AS] = "as",
     [TOKEN_KEYWORD_TRUE] = "true",
     [TOKEN_KEYWORD_FALSE] = "false",
+    [TOKEN_KEYWORD_NULL] = "null",
     [TOKEN_KEYWORD_CONST] = "const",
     [TOKEN_KEYWORD_RETURN] = "return",
     [TOKEN_KEYWORD_INLINE] = "inline",

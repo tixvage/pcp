@@ -21,6 +21,7 @@ void cgen_prepare(void) {
     fprintf(f, "typedef uint64_t u64;\n");
     fprintf(f, "typedef int64_t i64;\n");
     fprintf(f, "typedef const char *cstr;\n");
+    fprintf(f, "#define NULL ((void*)0)\n");
     fprintf(f, "\n");
 }
 
@@ -185,6 +186,9 @@ void cgen_var_assignment(Checked_Var_Assign *var_assign) {
 
 void cgen_expr(Checked_Expr *expr) {
     switch (expr->kind) {
+        case CHECKED_EXPR_NULL: {
+            fprintf(f, "NULL");
+        } break;
         case CHECKED_EXPR_NUMBER: {
             fprintf(f, "%d", expr->as.number->value);
         } break;

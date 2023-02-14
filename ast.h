@@ -147,6 +147,7 @@ typedef struct Struct_Decl {
 
 typedef enum Expr_Kind {
     EXPR_INVALID,
+    EXPR_NULL,
     EXPR_NUMBER,
     EXPR_STRING,
     EXPR_BOOLEAN,
