@@ -62,40 +62,35 @@ void check_top_assignments(Parsed_File *decls) {
 
 void check_functions(Parsed_File *decls) {
     for (int i = 0; i < decls->fn_decls.len; i++) {
-        Checked_Fn_Decl *possible_decl = function_exist(decls->fn_decls.data[i]->name.value);
+        Fn_Decl *decl = decls->fn_decls.data[i];
+        Checked_Fn_Decl *possible_decl = function_exist(decl->name.value);
         if (possible_decl) {
-            error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` already defined", possible_decl->name.value);
+            error_msg(decl->name.loc, ERROR_FATAL, "function `%s` already defined", possible_decl->name.value);
             error_msg(possible_decl->name.loc, ERROR_NOTE, "`%s` first defined here", possible_decl->name.value);
             exit(1);
         }
-        Type *possible_type = check_type(decls->fn_decls.data[i]->return_type);
-        if (!possible_type->str) {
-            error_msg(decls->fn_decls.data[i]->name.loc, ERROR_FATAL, "function `%s` has invalid return type", decls->fn_decls.data[i]->name.value);
+        Type *possible_type = check_type(decl->return_type);
+        if (!possible_type) {
+            error_msg(decl->name.loc, ERROR_FATAL, "function `%s` has invalid return type", decl->name.value);
             exit(1);
         }
-        possible_decl = malloc(sizeof(Checked_Fn_Decl));
-        possible_decl->name = decls->fn_decls.data[i]->name;
+        possible_decl = calloc(1, sizeof(Checked_Fn_Decl));
+        possible_decl->name = decl->name;
         possible_decl->return_type = possible_type;
-        possible_decl->eextern = decls->fn_decls.data[i]->eextern;
-        possible_decl->has_va_arg = decls->fn_decls.data[i]->has_va_arg;
-        possible_decl->body.data = NULL;
-        possible_decl->body.len = 0;
-        possible_decl->args.data = NULL;
-        possible_decl->args.len = 0;
+        possible_decl->eextern = decl->eextern;
+        possible_decl->has_va_arg = decl->has_va_arg;
 
         Var_Array vars = {0};
-        for (int j = 0; j < decls->fn_decls.data[i]->args.len; j++) {
-            Var var = decls->fn_decls.data[i]->args.data[j];
-            Checked_Var cv = {var.name, check_type(var.type)};
-            array_push(vars, cv);
+        for (int j = 0; j < decl->args.len; j++) {
+            Checked_Var_Decl *var_decl = check_var_decl(decl->args.data[j], &vars, NULL, 0);
+            array_push(possible_decl->args, var_decl);
         }
         if (!possible_decl->eextern) {
             Var_Array vars_copy = {0};
             array_copy(vars_copy, global_vars);
             array_append(vars_copy, vars.data, vars.len);
-            possible_decl->body = check_scope(vars_copy, decls->fn_decls.data[i]->body, possible_decl, 0);
+            possible_decl->body = check_scope(vars_copy, decl->body, possible_decl, 0);
         }
-        possible_decl->args = vars;
         array_push(info.funcs, possible_decl);
     }
 }
@@ -413,7 +408,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     exit(1);
                 }
                 for (int i = 0; i < possible_fn->args.len; i++) {
-                    Type *expected_type = possible_fn->args.data[i].type;
+                    Type *expected_type = possible_fn->args.data[i]->type;
                     Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i], vars, fn, deep, expected_type);
                     if (!type_eq(expected_type, given_expr->type)) {
                         error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);

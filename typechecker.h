@@ -137,7 +137,10 @@ typedef struct Checked_Fn_Decl {
     bool eextern;
     bool has_va_arg;
     Checked_Scope body;
-    Var_Array args;
+    struct {
+        Checked_Var_Decl **data;
+        int len;
+    } args;
 } Checked_Fn_Decl;
 
 typedef struct Checked_Struct_Decl {

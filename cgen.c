@@ -62,18 +62,18 @@ void cgen_function(Checked_Fn_Decl *fn) {
     if (fn->args.data == NULL) {
         fprintf(f, "void");
     } else {
-        Checked_Var first_arg = fn->args.data[0];
-        if (strcmp(first_arg.type->str, "va_arg") != 0) {
-            cgen_type(first_arg.type);
-            fprintf(f, " %s", first_arg.name.value);
+        Checked_Var_Decl *first_arg = fn->args.data[0];
+        if (strcmp(first_arg->type->str, "va_arg") != 0) {
+            cgen_type(first_arg->type);
+            fprintf(f, " %s", first_arg->name.value);
         } else {
             fprintf(f, "...");
         }
         for (int i = 1; i < fn->args.len; i++) {
-            if (strcmp(fn->args.data[i].type->str, "va_arg") != 0) {
+            if (strcmp(fn->args.data[i]->type->str, "va_arg") != 0) {
                 fprintf(f, ", ");
-                cgen_type(fn->args.data[i].type);
-                fprintf(f, " %s", fn->args.data[i].name.value);
+                cgen_type(fn->args.data[i]->type);
+                fprintf(f, " %s", fn->args.data[i]->name.value);
             } else {
                 fprintf(f, ", ...");
             }

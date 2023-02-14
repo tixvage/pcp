@@ -131,7 +131,7 @@ typedef struct Fn_Decl {
     bool has_va_arg;
     Scope body;
     struct {
-        Var *data;
+        Var_Decl **data;
         int len;
     } args;
 } Fn_Decl;

@@ -504,41 +504,23 @@ Fn_Decl *parse_extern_fn_decl(Parser *parser) {
 
 void parse_fn_decl_args(Parser *parser, Fn_Decl *fn_decl) {
     parser_expect(parser, TOKEN_LPAREN, "Expected `(`");
-    if (parser->current_token.type == TOKEN_RPAREN) {
-        parser_eat(parser);
-        return;
-    }
 
-    {
-        Var first_arg = {0};
-        Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
-        first_arg.name = id;
-        parser_expect(parser, TOKEN_COLON, "Expected `:`");
-        first_arg.type = parse_type(parser);
-        if (strcmp(first_arg.type->id, "va_arg") == 0) {
-            fn_decl->has_va_arg = true;
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RPAREN) {
+        Var_Decl *var_decl = parse_var_decl_standalone(parser);
+        if (var_decl->type) {
+            if (strcmp(var_decl->type->id, "va_arg") == 0) {
+                fn_decl->has_va_arg = true;
+            }
         }
-        array_push(fn_decl->args, first_arg);
-    }
-
-    if (parser->current_token.type == TOKEN_RPAREN) {
-        parser_eat(parser);
-        return;
-    }
-
-    while (!parser_eof(parser) && parser->current_token.type == TOKEN_COMMA) {
-        parser_eat(parser);
-        Var arg = {0};
-        Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
-        arg.name = id;
-        parser_expect(parser, TOKEN_COLON, "Expected `:`");
-        arg.type = parse_type(parser);
-        if (strcmp(arg.type->id, "va_arg") == 0) {
-            fn_decl->has_va_arg = true;
+        Token tk = parser->current_token;
+        if (tk.type == TOKEN_COMMA) {
+            parser_eat(parser);
+        } else if (tk.type != TOKEN_RPAREN) {
+            parser_expect(parser, TOKEN_RPAREN, "expected `)`");
         }
-        array_push(fn_decl->args, arg);
+        array_push(fn_decl->args, var_decl);
     }
-    parser_expect(parser, TOKEN_RPAREN, "Expected `)`");
+    parser_expect(parser, TOKEN_RPAREN, "expected `)`");
 }
 
 Struct_Decl *parse_struct_decl(Parser *parser) {
