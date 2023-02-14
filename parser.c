@@ -412,43 +412,43 @@ Struct_Construct *parse_struct_construct_expr(Parser *parser) {
     return sc;
 }
 
-Var_Decl *parse_var_decl(Parser *parser) {
+Var_Decl *parse_var_decl_standalone(Parser *parser) {
     Token id = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
     Token decl_type = parser_eat(parser);
     Parser_Type *var_type = NULL;
-    bool zero_init = false;
+    Var_Decl *var_decl = malloc(sizeof(Var_Decl));
+    var_decl->constant = false;
+    var_decl->name = id;
+    var_decl->value = NULL;
+    var_decl->zero_init = false;
+
     if (decl_type.type == TOKEN_COLON) {
         var_type = parse_type(parser);
-        Token next = parser_eat(parser);
-        if (next.type == TOKEN_SEMICOLON) {
-            zero_init = true;
-        } else if (next.type != TOKEN_EQUAL) {
-            error_msg(next.loc, ERROR_FATAL, "expected `=` or `;`");
-            exit(1);
+        Token next = parser->current_token;
+        if (next.type != TOKEN_EQUAL) {
+            var_decl->zero_init = true;
+            var_decl->type = var_type;
+            return var_decl;
         }
+        parser_eat(parser);
     } else if (decl_type.type != TOKEN_COLON_EQUAL) {
         error_msg(decl_type.loc, ERROR_FATAL, "expected `:` or `:=` after `var %s`", id.value);
         exit(1);
     }
 
-    Var_Decl *var_decl = malloc(sizeof(Var_Decl));
-    var_decl->constant = false;
-    var_decl->name = id;
-    var_decl->type = var_type;
-    Expr *expr = NULL;
-    if (!zero_init) {
-        expr = parse_expr(parser);
-        if (expr == NULL) {
-            error_msg(decl_type.loc, ERROR_FATAL, "expected expression after `=` or `:=`");
-            exit(1);
-        }
-    }
-    var_decl->value = expr;
-    var_decl->zero_init = zero_init;
-    if (!zero_init) {
-        parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
+    var_decl->value = parse_expr(parser);
+    if (var_decl->value == NULL) {
+        error_msg(decl_type.loc, ERROR_FATAL, "expected expression after `=` or `:=`");
+        exit(1);
     }
 
+    var_decl->type = var_type;
+    return var_decl;
+}
+
+Var_Decl *parse_var_decl(Parser *parser) {
+    Var_Decl *var_decl = parse_var_decl_standalone(parser);
+    parser_expect(parser, TOKEN_SEMICOLON, "Expected `;`");
     return var_decl;
 }
 
