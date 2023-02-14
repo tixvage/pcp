@@ -15,12 +15,12 @@ fn change_person_name_copy(p: Person, str: cstr): void {
 }
 
 struct Hello {
-    i: *i32;
+    i: *i32,
 }
 
 struct Person {
-    age: *Hello;
-    name: cstr = "sussy";
+    age: *Hello,
+    name: cstr = "sussy",
 }
 
 fn person_demo(): void {

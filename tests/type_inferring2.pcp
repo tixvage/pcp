@@ -1,6 +1,6 @@
 struct Dumb {
-    a: i32;
-    b: cstr = "hello";
+    a: i32,
+    b: cstr = "hello",
 }
 
 fn dumber_fn(d: Dumb): void {}

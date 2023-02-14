@@ -553,7 +553,14 @@ Struct_Decl *parse_struct_decl(Parser *parser) {
     struct_decl->vars.len = 0;
 
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
-        array_push(struct_decl->vars, parse_var_decl(parser));
+        Var_Decl *var_decl = parse_var_decl_standalone(parser);
+        Token tk = parser->current_token;
+        if (tk.type == TOKEN_COMMA) {
+            parser_eat(parser);
+        } else if (tk.type != TOKEN_RBRACE) {
+            parser_expect(parser, TOKEN_RBRACE, "expected `}`");
+        }
+        array_push(struct_decl->vars, var_decl);
     }
     parser_expect(parser, TOKEN_RBRACE, "expected `}`");
 

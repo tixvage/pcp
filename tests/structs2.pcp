@@ -1,6 +1,6 @@
 struct With_Default_Field {
-    a: i32 = 20;
-    b: bool;
+    a: i32 = 20,
+    b: bool,
 }
 
 fn main(): i32 {
