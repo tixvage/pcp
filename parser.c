@@ -376,6 +376,21 @@ Expr *parse_cast_expr(Parser *parser) {
     return root;
 }
 
+Construct_Arg parse_construct_arg(Parser *parser) {
+    Construct_Arg res = {0};
+
+    Token peek_tk = parser_peek_token(parser);
+
+    if (peek_tk.type == TOKEN_EQUAL) {
+        res.name = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
+        parser_expect(parser, TOKEN_EQUAL, "expected `=`");
+    }
+
+    res.expr = parse_expr(parser);
+
+    return res;
+}
+
 Struct_Construct *parse_struct_construct_expr(Parser *parser) {
     parser_expect(parser, TOKEN_LBRACE, "expected `{`");
 
@@ -383,29 +398,15 @@ Struct_Construct *parse_struct_construct_expr(Parser *parser) {
     sc->args.data = NULL;
     sc->args.len = 0;
 
-    if (parser->current_token.type == TOKEN_RBRACE) {
-        parser_eat(parser);
-        return sc;
-    }
-
     while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACE) {
-        Token name = parser_expect(parser, TOKEN_IDENTIFIER, "expected id");
-        parser_expect(parser, TOKEN_EQUAL, "expected `=`");
-        Expr *expr = parse_expr(parser);
-
-        Lexer temp_lexer = parser->lexer;
-        Token temp_token = parser_eat(parser);
-
-        Token tk = temp_token;
-        Struct_Construct_Arg arg = {name, expr};
-        array_push(sc->args, arg);
-        if (tk.type != TOKEN_COMMA && tk.type != TOKEN_RBRACE) {
-            error_msg(tk.loc, ERROR_FATAL, "expected `,` or `}`");
-            exit(1);
-        } else if (tk.type == TOKEN_RBRACE){
-            parser->lexer = temp_lexer;
-            parser->current_token = temp_token;
+        Construct_Arg arg = parse_construct_arg(parser);
+        Token tk = parser->current_token;
+        if (tk.type == TOKEN_COMMA) {
+            parser_eat(parser);
+        } else if (tk.type != TOKEN_RBRACE) {
+            parser_expect(parser, TOKEN_RBRACE, "expected `}`");
         }
+        array_push(sc->args, arg);
     }
 
     parser_expect(parser, TOKEN_RBRACE, "expected `}`");

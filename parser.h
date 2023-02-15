@@ -35,6 +35,7 @@ Expr *parse_primary_expr(Parser *parser);
 Expr *parse_comparative_expr(Parser *parser);
 Expr *parse_additive_expr(Parser *parser);
 Expr *parse_multiplicitave_expr(Parser *parser);
+Construct_Arg parse_construct_arg(Parser *parser);
 Struct_Construct *parse_struct_construct_expr(Parser *parser);
 Expr *parse_cast_expr(Parser *parser);
 Var_Decl *parse_var_decl_standalone(Parser *parser);

@@ -67,14 +67,14 @@ struct Identifier {
     struct Identifier *child;
 };
 
-typedef struct Struct_Construct_Arg {
+typedef struct Construct_Arg {
     Token name;
     Expr *expr;
-} Struct_Construct_Arg;
+} Construct_Arg;
 
 typedef struct Struct_Construct {
     struct {
-        Struct_Construct_Arg *data;
+        Construct_Arg *data;
         int len;
     } args;
 } Struct_Construct;
