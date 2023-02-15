@@ -474,7 +474,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             }
 
             struct {
-                Checked_Struct_Construct_Arg *data;
+                Checked_Construct_Arg *data;
                 int len;
             } default_args = {0};
 
@@ -487,7 +487,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 }
                 if (!found) {
                     if (sd->vars.data[i]->value) {
-                        Checked_Struct_Construct_Arg default_arg = {0};
+                        Checked_Construct_Arg default_arg = {0};
                         default_arg.name = sd->vars.data[i]->name;
                         default_arg.expr = sd->vars.data[i]->value;
                         array_push(default_args, default_arg);
@@ -514,7 +514,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                             exit(1);
                         }
                         found = true;
-                        Checked_Struct_Construct_Arg arg = {0};
+                        Checked_Construct_Arg arg = {0};
                         arg.name = sd->vars.data[j]->name;
                         arg.expr = given_expr;
                         array_push(csc->args, arg);

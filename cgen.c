@@ -249,7 +249,7 @@ void cgen_expr(Checked_Expr *expr) {
         case CHECKED_EXPR_STRUCT_CONSTRUCT: {
             fprintf(f, "(%s){ ", expr->as.struct_construct->type->str);
             for (int i = 0; i < expr->as.struct_construct->args.len; i++) {
-                Checked_Struct_Construct_Arg arg = expr->as.struct_construct->args.data[i];
+                Checked_Construct_Arg arg = expr->as.struct_construct->args.data[i];
                 fprintf(f, ".%s = ", arg.name.value);
                 cgen_expr(arg.expr);
                 fprintf(f, ", ");

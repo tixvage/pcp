@@ -75,14 +75,14 @@ typedef struct Checked_Identifier {
     struct Checked_Identifier *child;
 } Checked_Identifier;
 
-typedef struct Checked_Struct_Construct_Arg {
+typedef struct Checked_Construct_Arg {
     Token name;
     Checked_Expr *expr;
-} Checked_Struct_Construct_Arg;
+} Checked_Construct_Arg;
 
 typedef struct Checked_Struct_Construct {
     struct {
-        Checked_Struct_Construct_Arg *data;
+        Checked_Construct_Arg *data;
         int len;
     } args;
     Type *type;
