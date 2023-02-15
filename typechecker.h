@@ -91,7 +91,7 @@ typedef struct Checked_Struct_Construct {
 typedef struct Checked_Func_Call {
     char *name;
     struct {
-        Checked_Expr **data;
+        Checked_Construct_Arg *data;
         int len;
     } args;
 } Checked_Func_Call;

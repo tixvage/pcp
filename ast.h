@@ -82,7 +82,7 @@ typedef struct Struct_Construct {
 typedef struct Func_Call {
     char *name;
     struct {
-        Expr **data;
+        Construct_Arg *data;
         int len;
     } args;
 } Func_Call;

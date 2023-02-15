@@ -229,10 +229,10 @@ void cgen_expr(Checked_Expr *expr) {
             Checked_Func_Call *func_call = expr->as.func_call;
             fprintf(f, "%s(", func_call->name);
             if (func_call->args.data != NULL) {
-                Checked_Expr *first_arg = func_call->args.data[0];
+                Checked_Expr *first_arg = func_call->args.data[0].expr;
                 cgen_expr(first_arg);
                 for (int i = 1; i < func_call->args.len; i++) {
-                    Checked_Expr *arg = func_call->args.data[i];
+                    Checked_Expr *arg = func_call->args.data[i].expr;
                     fprintf(f, ", ");
                     cgen_expr(arg);
                 }

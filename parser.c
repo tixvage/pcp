@@ -654,22 +654,15 @@ Func_Call *parse_func_call(Parser *parser) {
 
 void parse_func_call_args(Parser *parser, Func_Call *func_call) {
     parser_expect(parser, TOKEN_LPAREN, "Expected `(`");
-    if (parser->current_token.type == TOKEN_RPAREN) {
-        parser_eat(parser);
-        return;
-    }
 
-    Expr *first_arg = parse_expr(parser);
-    array_push(func_call->args, first_arg);
-
-    if (parser->current_token.type == TOKEN_RPAREN) {
-        parser_eat(parser);
-        return;
-    }
-
-    while (!parser_eof(parser) && parser->current_token.type == TOKEN_COMMA) {
-        parser_eat(parser);
-        Expr *arg = parse_expr(parser);
+    while (!parser_eof(parser) && parser->current_token.type != TOKEN_RPAREN) {
+        Construct_Arg arg = parse_construct_arg(parser);
+        Token tk = parser->current_token;
+        if (tk.type == TOKEN_COMMA) {
+            parser_eat(parser);
+        } else if (tk.type != TOKEN_RPAREN) {
+            parser_expect(parser, TOKEN_RPAREN, "expected `)`");
+        }
         array_push(func_call->args, arg);
     }
 
