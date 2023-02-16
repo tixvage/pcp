@@ -46,7 +46,7 @@ void check_structs(Parsed_File *decls) {
         possible_decl->name = decl->name;
         possible_decl->eextern = decl->eextern;
         Type *type = calloc(1, sizeof(Type));
-        type->str = decl->name.value; 
+        type->str = decl->name.value;
         type->flag = TYPE_STRUCT;
         array_push(info.types, type);
         array_push(info.structs, possible_decl);
@@ -85,6 +85,26 @@ void check_functions(Parsed_File *decls) {
             Checked_Var_Decl *var_decl = check_var_decl(decl->args.data[j], &vars, NULL, 0);
             array_push(possible_decl->args, var_decl);
         }
+
+        if (possible_decl->args.len > 0) {
+            bool found = possible_decl->args.data[0]->zero_init;
+            bool first = found;
+            bool old = found;
+            bool changed = false;
+            for (int j = 1; j < possible_decl->args.len; j++) {
+                found = possible_decl->args.data[j]->zero_init;
+                if (found != old) {
+                    if (changed || !first) {
+                        possible_decl->mixed_default_args = true;
+                        break;
+                    } else {
+                        changed = true;
+                    }
+                }
+                old = found;
+            }
+        }
+
         if (!possible_decl->eextern) {
             Var_Array vars_copy = {0};
             array_copy(vars_copy, global_vars);

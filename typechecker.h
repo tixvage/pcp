@@ -136,6 +136,7 @@ typedef struct Checked_Fn_Decl {
     Type *return_type;
     bool eextern;
     bool has_va_arg;
+    bool mixed_default_args;
     Checked_Scope body;
     struct {
         Checked_Var_Decl **data;
