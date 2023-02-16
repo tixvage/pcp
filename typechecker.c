@@ -425,6 +425,17 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     array_push(func_call->args, arg);
                 }
             } else {
+                if (expr->as.func_call->args.len > 0) {
+                    bool found = expr->as.func_call->args.data[0].name.value;
+                    bool old = found;
+                    for (int i = 1; i < expr->as.func_call->args.len; i++) {
+                        found = expr->as.func_call->args.data[i].name.value;
+                        if (found != old) {
+                            error_msg(expr->loc, ERROR_FATAL, "mixture of `arg = expr` and `expr` elements is not allowed");
+                            exit(1);
+                        }
+                    }
+                }
                 if (possible_fn->args.len != expr->as.func_call->args.len) {
                     error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
                     error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
