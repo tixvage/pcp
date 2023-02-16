@@ -425,6 +425,7 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                     array_push(func_call->args, arg);
                 }
             } else {
+                bool with_arg_expr = false;
                 if (expr->as.func_call->args.len > 0) {
                     bool found = expr->as.func_call->args.data[0].name.value;
                     bool old = found;
@@ -434,26 +435,67 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                             error_msg(expr->loc, ERROR_FATAL, "mixture of `arg = expr` and `expr` elements is not allowed");
                             exit(1);
                         }
+                        old = found;
                     }
+                    with_arg_expr = found;
                 }
-                if (possible_fn->args.len != expr->as.func_call->args.len) {
-                    error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
-                    error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
-                    exit(1);
-                }
-                for (int i = 0; i < possible_fn->args.len; i++) {
-                    Type *expected_type = possible_fn->args.data[i]->type;
-                    Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i].expr, vars, fn, deep, expected_type);
-                    if (!type_eq(expected_type, given_expr->type)) {
-                        error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
-                        error_msg(expr->as.func_call->args.data[i].expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(expected_type), Type_Arg(given_expr->type));
-                        error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
-                        exit(1);
+                if (possible_fn->mixed_default_args) {
+                    if (with_arg_expr) {
+                        for (int i = 0; i < possible_fn->args.len; i++) {
+                            bool found = false;
+                            for (int j = 0; j < expr->as.func_call->args.len; j++) {
+                                //TODO: check if arg name actually exists
+                                if (strcmp(expr->as.func_call->args.data[j].name.value, possible_fn->args.data[i]->name.value) == 0) {
+                                    Type *expected_type = possible_fn->args.data[i]->type;
+                                    Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[j].expr, vars, fn, deep, expected_type);
+                                    if (!type_eq(expected_type, given_expr->type)) {
+                                        error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
+                                        error_msg(expr->as.func_call->args.data[j].expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(expected_type), Type_Arg(given_expr->type));
+                                        error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
+                                        exit(1);
+                                    }
+                                    found = true;
+                                    Checked_Construct_Arg arg = {0};
+                                    arg.name = expr->as.func_call->args.data[j].name;
+                                    arg.expr = given_expr;
+                                    array_push(func_call->args, arg);
+                                }
+                            }
+                            if (!found) {
+                                Checked_Construct_Arg arg = {0};
+                                arg.name = possible_fn->args.data[i]->name;
+                                arg.expr = possible_fn->args.data[i]->value;
+                                if (!arg.expr) {
+                                    error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
+                                    error_msg(possible_fn->name.loc, ERROR_FATAL, "argument `%s` does not have any default value", possible_fn->args.data[i]->name.value);
+                                    exit(1);
+                                }
+                                array_push(func_call->args, arg);
+                            }
+                        }
+                    } else {
+                        if (possible_fn->args.len != expr->as.func_call->args.len) {
+                            error_msg(expr->loc, ERROR_FATAL, "function `%s` accepts %d arguments but %d given", expr->as.func_call->name, possible_fn->args.len, expr->as.func_call->args.len);
+                            error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
+                            exit(1);
+                        }
+                        for (int i = 0; i < possible_fn->args.len; i++) {
+                            Type *expected_type = possible_fn->args.data[i]->type;
+                            Checked_Expr *given_expr = check_expr(expr->as.func_call->args.data[i].expr, vars, fn, deep, expected_type);
+                            if (!type_eq(expected_type, given_expr->type)) {
+                                error_msg(expr->loc, ERROR_FATAL, "arguments to `%s` function are incorrect", expr->as.func_call->name);
+                                error_msg(expr->as.func_call->args.data[i].expr->loc, ERROR_FATAL, "expected type `"Type_Fmt"` but got `"Type_Fmt"`", Type_Arg(expected_type), Type_Arg(given_expr->type));
+                                error_msg(possible_fn->name.loc, ERROR_NOTE, "`%s` defined here", possible_fn->name.value);
+                                exit(1);
+                            }
+                            Checked_Construct_Arg arg = {0};
+                            arg.name = expr->as.func_call->args.data[i].name;
+                            arg.expr = given_expr;
+                            array_push(func_call->args, arg);
+                        }
                     }
-                    Checked_Construct_Arg arg = {0};
-                    arg.name = expr->as.func_call->args.data[i].name;
-                    arg.expr = given_expr;
-                    array_push(func_call->args, arg);
+                } else {
+                    assert(0 && "todo");
                 }
             }
             res->type = possible_fn->return_type;
