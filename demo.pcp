@@ -94,6 +94,21 @@ fn complex_types_demo(): void {
     printf("%d\n", **c);
 }
 
+fn default_function_args(
+    age := 0,
+    temp: i32,
+    p := {
+        age = null
+    } as Person,
+): void {
+    a : Hello = {
+        i = ^age
+    };
+    p.age = ^a;
+
+    print_person(p);
+}
+
 fn main(): i32 {
     printf("malloc demo:\n");
     malloc_demo();
@@ -105,5 +120,7 @@ fn main(): i32 {
     risky_person_demo();
     printf("\ncomplex types demo:\n");
     complex_types_demo();
+    printf("\ndefault function args demo:\n");
+    default_function_args(temp = 0, age = 50);
     return 0;
 }
