@@ -221,6 +221,28 @@ Expr *parse_primary_expr(Parser *parser) {
             expr->loc = as_token.loc;
             return expr;
         } break;
+        case TOKEN_LBRACKET: {
+            Token as_token = parser_eat(parser);
+            Array_Construct *ac = calloc(1, sizeof(Array_Construct));
+
+            while (!parser_eof(parser) && parser->current_token.type != TOKEN_RBRACKET) {
+                Expr *expr = parse_expr(parser);
+                Token tk = parser->current_token;
+                if (tk.type == TOKEN_COMMA) {
+                    parser_eat(parser);
+                } else if (tk.type != TOKEN_RBRACKET) {
+                    parser_expect(parser, TOKEN_RBRACKET, "expected `]`");
+                }
+                array_push(ac->exprs, expr);
+            }
+            parser_expect(parser, TOKEN_RBRACKET, "expected `]`");
+
+            Expr *expr = malloc(sizeof(Expr));
+            expr->kind = EXPR_ARRAY_CONSTRUCT;
+            expr->as = (Expr_As){.array_construct = ac};
+            expr->loc = as_token.loc;
+            return expr;
+        } break;
         case TOKEN_IDENTIFIER: {
             Token peek_tk = parser_peek_token(parser);
             if (peek_tk.type == TOKEN_LPAREN) {
@@ -685,13 +707,17 @@ Parser_Type *parse_type(Parser *parser) {
         res->len = atoi(array_len.value);
     } else {
         res->type = BASIC_BASE;
-        res->id = parser_expect(parser, TOKEN_IDENTIFIER, "expected identifier").value;
+        Token tk = parser_expect(parser, TOKEN_IDENTIFIER, "expected identifier");
+        res->id = tk.value;
+        res->loc = tk.loc;
     }
 
     Parser_Type *ptr = res;
     char *id = ptr->id;
+    Loc loc = ptr->loc;
     while (ptr->base) {
         id = ptr->base->id;
+        loc = ptr->base->loc;
         ptr = ptr->base;
     }
 
@@ -700,6 +726,7 @@ Parser_Type *parse_type(Parser *parser) {
     ptr = res;
     while (ptr->base) {
         ptr->id = id;
+        ptr->loc = loc;
         ptr = ptr->base;
     }
 

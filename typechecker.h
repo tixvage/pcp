@@ -75,6 +75,13 @@ typedef struct Checked_Identifier {
     struct Checked_Identifier *child;
 } Checked_Identifier;
 
+typedef struct Checked_Array_Construct {
+    struct {
+        Checked_Expr **data;
+        int len;
+    } exprs;
+} Checked_Array_Construct;
+
 typedef struct Checked_Construct_Arg {
     Token name;
     Checked_Expr *expr;
@@ -165,6 +172,7 @@ typedef enum Checked_Expr_Kind {
     CHECKED_EXPR_UN_OP,
     CHECKED_EXPR_CAST,
     CHECKED_EXPR_STRUCT_CONSTRUCT,
+    CHECKED_EXPR_ARRAY_CONSTRUCT,
 } Checked_Expr_Kind;
 
 typedef union Checked_Expr_As {
@@ -177,6 +185,7 @@ typedef union Checked_Expr_As {
     Checked_Un_Op *un_op;
     Checked_Cast *cast;
     Checked_Struct_Construct *struct_construct;
+    Checked_Array_Construct *array_construct;
 } Checked_Expr_As;
 
 struct Checked_Expr {

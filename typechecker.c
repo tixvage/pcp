@@ -393,11 +393,13 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 type = get_ptr;
             }
             if (expr->as.un_op->op.type == TOKEN_ASTERISK) {
-                if (type->flag != TYPE_POINTER) {
+                if (type->flag != TYPE_POINTER && type->flag != TYPE_ARRAY) {
                     error_msg(expr->loc, ERROR_FATAL, "expected `*%s` but got `%s`", type->str, type->str);
                     exit(1);
                 }
+                char *id = type->str;
                 type = type->base.pointer;
+                type->str = id;
             }
             res->type = type;
             res->kind = CHECKED_EXPR_UN_OP;
@@ -646,6 +648,54 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
             res->kind = CHECKED_EXPR_STRUCT_CONSTRUCT;
             res->as.struct_construct = csc;
         } break;
+        case EXPR_ARRAY_CONSTRUCT: {
+            Type *res_type = type_exist("auto");
+            if (wanted_type->flag == TYPE_ARRAY) {
+                res_type = wanted_type;
+            }
+            Checked_Array_Construct *ac = calloc(1, sizeof(Checked_Array_Construct));
+            if (expr->as.array_construct->exprs.len > 0) {
+                Type *expected = res_type;
+                if (res_type->flag == TYPE_ARRAY) {
+                    expected = res_type->base.array->base;
+                }
+                Checked_Expr *first_expr = check_expr(expr->as.array_construct->exprs.data[0], vars, fn, deep, expected);
+                if (!type_eq(expected, type_exist("auto"))) {
+                    if (!type_eq(expected, first_expr->type)) {
+                        error_msg(first_expr->loc, ERROR_FATAL, "expected "Type_Fmt" got "Type_Fmt"", Type_Arg(expected), Type_Arg(first_expr->type));
+                        exit(1);
+                    }
+                } else {
+                    if (type_eq(first_expr->type, type_exist("auto"))) {
+                        error_msg(expr->loc, ERROR_FATAL, "type could not inferred");
+                        exit(1);
+                    }
+                    res_type = calloc(1, sizeof(Type));
+                    res_type->str = first_expr->type->str;
+                    res_type->flag = TYPE_ARRAY;
+                    Array *array = calloc(1, sizeof(Array));
+                    array->base = first_expr->type;
+                    array->len = expr->as.array_construct->exprs.len;
+                    res_type->base.array = array;
+                    expected = first_expr->type;
+                }
+                array_push(ac->exprs, first_expr);
+                for (int i = 1; i < expr->as.array_construct->exprs.len; i++) {
+                    Checked_Expr *ce = check_expr(expr->as.array_construct->exprs.data[i], vars, fn, deep, expected);
+                    if (!type_eq(expected, ce->type)) {
+                        error_msg(first_expr->loc, ERROR_FATAL, "expected "Type_Fmt" got "Type_Fmt"", Type_Arg(expected), Type_Arg(ce->type));
+                        exit(1);
+                    }
+                    array_push(ac->exprs, ce);
+                }
+            } else {
+                error_msg(expr->loc, ERROR_FATAL, "array length can not be 0");
+                exit(1);
+            }
+            res->type = res_type;
+            res->kind = CHECKED_EXPR_ARRAY_CONSTRUCT;
+            res->as.array_construct = ac;
+        } break;
         default: {
             assert(0 && "unreacheable");
         } break;
@@ -737,6 +787,10 @@ Type *check_type(Parser_Type *t) {
     }
 
     Type *possible_type = type_exist(t->id);
+    if (!possible_type) {
+        error_msg(t->loc, ERROR_FATAL, "invalid type `%s`", t->id);
+        exit(1);
+    }
     Type *res = calloc(1, sizeof(Type));
     //TODO: this will cause issues related to typedefs
     memcpy(res, possible_type, sizeof(Type));

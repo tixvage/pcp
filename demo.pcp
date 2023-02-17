@@ -94,7 +94,7 @@ fn complex_types_demo(): void {
     printf("%d\n", **c);
 }
 
-fn default_function_args(
+fn default_function_args_demo(
     age := 0,
     temp: i32,
     p := {
@@ -109,6 +109,19 @@ fn default_function_args(
     print_person(p);
 }
 
+struct Dumb {
+    a: [i32; 3] = null,
+}
+
+fn arrays_demo(): void {
+    a := [0, 2, 3];
+    dumber := {
+        a = a,
+    } as Dumb;
+    b := [dumber];
+    c := [b, b];
+}
+
 fn main(): i32 {
     printf("malloc demo:\n");
     malloc_demo();
@@ -121,6 +134,8 @@ fn main(): i32 {
     printf("\ncomplex types demo:\n");
     complex_types_demo();
     printf("\ndefault function args demo:\n");
-    default_function_args(temp = 0, age = 50);
+    default_function_args_demo(temp = 0, age = 50);
+    printf("\narrays demo:\n");
+    arrays_demo();
     return 0;
 }

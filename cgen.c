@@ -256,6 +256,21 @@ void cgen_expr(Checked_Expr *expr) {
             }
             fprintf(f, " }");
         } break;
+        case CHECKED_EXPR_ARRAY_CONSTRUCT: {
+            Checked_Array_Construct *ac = expr->as.array_construct;
+            fprintf(f, "(");
+            cgen_type(expr->type->base.array->base);
+            fprintf(f, "[])");
+            fprintf(f, "{");
+            Checked_Expr *first_arg = ac->exprs.data[0];
+            cgen_expr(first_arg);
+            for (int i = 1; i < ac->exprs.len; i++) {
+                Checked_Expr *arg = ac->exprs.data[i];
+                fprintf(f, ", ");
+                cgen_expr(arg);
+            }
+            fprintf(f, "}");
+        } break;
         default: {
             assert(0 && "unreacheable");
         } break;

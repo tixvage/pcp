@@ -19,6 +19,7 @@ typedef enum Parser_Type_Basic {
 typedef struct Parser_Type {
     char *id;
     int len;
+    Loc loc;
     Parser_Type_Basic type;
     struct Parser_Type *base;
 } Parser_Type;
@@ -66,6 +67,13 @@ struct Identifier {
     char *name;
     struct Identifier *child;
 };
+
+typedef struct Array_Construct {
+    struct {
+        Expr **data;
+        int len;
+    } exprs;
+} Array_Construct;
 
 typedef struct Construct_Arg {
     Token name;
@@ -157,6 +165,7 @@ typedef enum Expr_Kind {
     EXPR_UN_OP,
     EXPR_CAST,
     EXPR_STRUCT_CONSTRUCT,
+    EXPR_ARRAY_CONSTRUCT,
 } Expr_Kind;
 
 typedef union Expr_As {
@@ -169,6 +178,7 @@ typedef union Expr_As {
     Un_Op *un_op;
     Cast *cast;
     Struct_Construct *struct_construct;
+    Array_Construct *array_construct;
 } Expr_As;
 
 struct Expr {
