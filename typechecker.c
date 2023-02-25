@@ -659,10 +659,12 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 if (res_type->flag == TYPE_ARRAY) {
                     expected = res_type->base.array->base;
                 }
-                Checked_Expr *first_expr = check_expr(expr->as.array_construct->exprs.data[0], vars, fn, deep, expected);
+
+                Expr *first_unchecked = expr->as.array_construct->exprs.data[0];
+                Checked_Expr *first_expr = check_expr(first_unchecked, vars, fn, deep, expected);
                 if (!type_eq(expected, type_exist("auto"))) {
                     if (!type_eq(expected, first_expr->type)) {
-                        error_msg(first_expr->loc, ERROR_FATAL, "expected "Type_Fmt" got "Type_Fmt"", Type_Arg(expected), Type_Arg(first_expr->type));
+                        error_msg(first_unchecked->loc, ERROR_FATAL, "expected `"Type_Fmt"` got `"Type_Fmt"`", Type_Arg(expected), Type_Arg(first_expr->type));
                         exit(1);
                     }
                 } else {
@@ -681,9 +683,10 @@ Checked_Expr *check_expr(Expr *expr, Var_Array vars, Checked_Fn_Decl *fn, int de
                 }
                 array_push(ac->exprs, first_expr);
                 for (int i = 1; i < expr->as.array_construct->exprs.len; i++) {
-                    Checked_Expr *ce = check_expr(expr->as.array_construct->exprs.data[i], vars, fn, deep, expected);
+                    Expr *unchecked = expr->as.array_construct->exprs.data[i];
+                    Checked_Expr *ce = check_expr(unchecked, vars, fn, deep, expected);
                     if (!type_eq(expected, ce->type)) {
-                        error_msg(first_expr->loc, ERROR_FATAL, "expected "Type_Fmt" got "Type_Fmt"", Type_Arg(expected), Type_Arg(ce->type));
+                        error_msg(unchecked->loc, ERROR_FATAL, "expected `"Type_Fmt"` got `"Type_Fmt"`", Type_Arg(expected), Type_Arg(ce->type));
                         exit(1);
                     }
                     array_push(ac->exprs, ce);
